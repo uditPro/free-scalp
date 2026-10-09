@@ -1,0 +1,3 @@
+import { stripe } from '@/lib/billing';
+import { identity, admin, appOrigin, checkOrigin, response, route, ApiError } from '@/lib/server';
+export const POST = route(async request => { checkOrigin(request); const { user } = await identity(); const { data, error } = await admin().from('profiles').select('stripe_customer_id').eq('id', user.id).single(); if (error || !data?.stripe_customer_id) throw new ApiError(400, 'No billing account exists yet.'); const session = await stripe().billingPortal.sessions.create({ customer: data.stripe_customer_id, return_url: `${appOrigin()}/dashboard` }); return response({ url: session.url }); });

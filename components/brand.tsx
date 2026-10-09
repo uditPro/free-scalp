@@ -1,0 +1,6 @@
+import Link from "next/link";
+import { ArrowUpRight, Command } from "lucide-react";
+
+export function Brand() { return <Link className="brand" href="/" aria-label="ReachFlow home"><span className="brand-mark"><Command size={20}/></span>reachflow<span className="brand-period">.</span></Link>; }
+export function Header() { return <header className="site-header"><div className="container header-inner"><Brand/><nav aria-label="Main navigation"><Link href="/#possibilities">Use cases</Link><Link href="/#how-it-works">How it works</Link><Link href="/pricing">Pricing</Link></nav><div className="nav-actions"><Link className="login-link" href="/login">Log in</Link><Link className="button button-small" href="/signup">Get started <ArrowUpRight size={15}/></Link></div></div></header>; }
+export function Footer() { return <footer className="site-footer"><div className="container footer-inner"><div><Brand/><p>A little less searching. A lot more possibility.</p></div><div className="footer-links"><Link href="/pricing">Pricing</Link><Link href="/dashboard">Workspace</Link><Link href="/#faq">Questions?</Link></div><span className="footer-note">Built for the curious. © {new Date().getFullYear()} ReachFlow</span></div></footer>; }

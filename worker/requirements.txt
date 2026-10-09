@@ -1,0 +1,2 @@
+# Agent-Reach itself is installed separately by setup-worker.ps1 from the
+# upstream MIT repository. The bridge uses only Python standard library.

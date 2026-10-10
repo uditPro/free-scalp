@@ -23,7 +23,17 @@ export async function proxy(request: NextRequest) {
       },
     },
   });
-  const { data: { user } } = await client.auth.getUser();
+  // Auth refresh is a network call. A temporary Supabase outage, an expired
+  // cookie, or a malformed stale cookie must not turn /login into a framework
+  // error page. Treat that state as signed out and let the public auth page
+  // render; protected pages still redirect to login below.
+  let user: { id: string } | null = null;
+  try {
+    const result = await client.auth.getUser();
+    user = result.data.user;
+  } catch {
+    user = null;
+  }
   const path = request.nextUrl.pathname;
   const authPage = path === "/login" || path === "/signup";
   if (user && authPage) return copyCookies(response, NextResponse.redirect(new URL("/dashboard", request.url)));

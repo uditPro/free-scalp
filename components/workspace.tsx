@@ -100,7 +100,7 @@ export default function Workspace() {
   }
   async function logout() {
     setActionPending(true); setError("");
-    try { await api("/api/auth", { action: "logout" }); window.location.assign("/login"); }
+    try { await api("/api/auth", { action: "logout" }); window.location.replace("/login"); }
     catch (err) { setError(err instanceof Error ? err.message : "Unable to sign out."); setActionPending(false); }
   }
   function chooseKind(next: Kind) { setKind(next); setView("search"); setSearched(false); setResults([]); setWarnings([]); setError(""); }

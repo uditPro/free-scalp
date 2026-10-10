@@ -29,6 +29,18 @@ export function safeUrl(value: unknown): string | null {
   } catch { return null; }
 }
 export type SearchResult = { id: string; title: string; url: string; description: string; source: string; publishedAt?: string; author?: string; content?: string };
+export function sortResults(results: SearchResult[]): SearchResult[] {
+  return results
+    .map((result, index) => ({ result, index, time: result.publishedAt ? Date.parse(result.publishedAt) : NaN }))
+    .sort((a, b) => {
+      const aDated = Number.isFinite(a.time);
+      const bDated = Number.isFinite(b.time);
+      if (aDated !== bDated) return aDated ? -1 : 1;
+      if (!aDated) return a.index - b.index;
+      return b.time - a.time || a.index - b.index;
+    })
+    .map(({ result }) => result);
+}
 export function normalizeResults(data: unknown, options: { limit?: number; detailed?: boolean } = {}): SearchResult[] {
   if (!data || typeof data !== 'object' || !('results' in data) || !Array.isArray(data.results)) return [];
   const seen = new Set<string>();
@@ -46,7 +58,6 @@ export function normalizeResults(data: unknown, options: { limit?: number; detai
       ...(typeof item.author === 'string' && item.author.trim() && item.author !== 'N/A' ? { author: item.author.slice(0, 200) } : {}),
       ...(options.detailed && text ? { content: text.slice(0, 6000) } : {}),
     });
-    if (results.length === limit) break;
   }
-  return results;
+  return sortResults(results).slice(0, limit).map((result, index) => ({ ...result, id: String(index + 1) }));
 }

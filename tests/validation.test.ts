@@ -15,6 +15,12 @@ assert.equal(hasQuota('free', 9), true); assert.equal(hasQuota('free', 10), fals
 const rows = Array.from({ length: 25 }, (_, i) => ({ url: `https://example.com/${i}`, title: 'a'.repeat(400), text: 'b'.repeat(1500) }));
 const results = normalizeResults({ results: [{ url: 'javascript:bad' }, rows[0], ...rows] });
 assert.equal(results.length, 10); assert.equal(results[0].title.length, 300); assert.equal(results[0].description.length, 1200); assert.equal(new Set(results.map(x => x.url)).size, 10); assert.equal(results[0].source, 'example.com');
+const ordered = normalizeResults({ results: [
+  { url: 'https://example.com/undated', title: 'Undated' },
+  { url: 'https://example.com/old', title: 'Old', publishedDate: '2025-01-01T00:00:00Z' },
+  { url: 'https://example.com/new', title: 'New', publishedDate: '2026-01-01T00:00:00Z' },
+] }, { limit: 3 });
+assert.deepEqual(ordered.map(row => row.title), ['New', 'Old', 'Undated']);
 assert.deepEqual(normalizeResults(null), []); assert.deepEqual(normalizeResults({ results: [null, {}, 4] }), []);
 
 const mcpJsonArray = JSON.stringify([{ title: 'Example role', url: 'https://jobs.example.com/role/1', highlights: ['Remote role'] }]);

@@ -81,6 +81,8 @@ test('provider filters combine sources and explicit domains while blocks remain 
   const body = providerFilters(filters);
   assert.deepEqual(body.includeDomains, ['github.com', 'reddit.com', 'linkedin.com']);
   assert.deepEqual(body.excludeDomains, ['spam.com']); assert.equal(body.startPublishedDate, '2026-01-01T00:00:00Z'); assert.equal(body.userLocation, 'US');
+  assert.equal('freshness' in body, false);
+  assert.deepEqual(providerFilters(searchFiltersSchema.parse({})), {});
 });
 
 test('dedicated Exa API still works and does not expose the key in the result', async t => {
@@ -88,9 +90,51 @@ test('dedicated Exa API still works and does not expose the key in the result', 
     assert.equal(url, 'https://api.exa.ai/search');
     assert.equal((options.headers as Record<string, string>)['x-api-key'], 'test-private-key');
     assert.equal(options.redirect, 'error');
+    const body = JSON.parse(String(options.body)) as { freshness?: string };
+    assert.equal('freshness' in body, false);
     return Response.json({ results: [{ url: 'https://example.com/jobs', title: 'Jobs', text: 'Real provider fixture' }] });
   });
   const result = await discover('React', 'jobs', { EXA_API_KEY: 'test-private-key' });
   assert.equal(result.provider, 'exa-api'); assert.equal(result.results.length, 1);
   assert.equal(JSON.stringify(result).includes('test-private-key'), false);
+});
+
+test('discovery prefers recent sources without restricting dates and returns stable newest-first results', async t => {
+  t.mock.method(globalThis, 'fetch', async (_url: string, options: RequestInit) => {
+    const body = JSON.parse(String(options.body));
+    assert.equal('freshness' in body, false);
+    assert.equal('startPublishedDate' in body, false);
+    assert.equal('endPublishedDate' in body, false);
+    assert.match(body.query, /recently published relevant sources, then older relevant sources/);
+    return Response.json({ results: [
+      { url: 'https://example.com/unknown' },
+      { url: 'https://example.com/old', publishedDate: '2020-01-01' },
+      { url: 'https://example.com/new', publishedDate: '2026-01-01' },
+      { url: 'https://example.com/tie', publishedDate: '2026-01-01' },
+      { url: 'https://example.com/invalid', publishedDate: 'unknown' },
+    ] });
+  });
+  const result = await discover('React', 'jobs', { EXA_API_KEY: 'test-key' });
+  assert.deepEqual(result.results.map(row => new URL(row.url).pathname), ['/new', '/tie', '/old', '/unknown', '/invalid']);
+  assert.equal(result.results[0].publishedAt, '2026-01-01T00:00:00.000Z');
+  assert.equal(result.results[3].publishedAt, undefined);
+  assert.ok(result.warnings.some(warning => /newest-first.*unknown dates last.*does not prove.*still open/.test(warning)));
+  assert.match(discoveryQuery('React', 'research').objective, /then older relevant sources/);
+});
+
+test('discovery preserves explicit historical date bounds', async t => {
+  const filters = { publishedAfter: '2020-01-01T00:00:00Z', publishedBefore: '2020-12-31T23:59:59Z' };
+  t.mock.method(globalThis, 'fetch', async (_url: string, options: RequestInit) => {
+    const body = JSON.parse(String(options.body));
+    assert.equal('freshness' in body, false);
+    assert.equal(body.startPublishedDate, filters.publishedAfter);
+    assert.equal(body.endPublishedDate, filters.publishedBefore);
+    return Response.json({ results: [
+      { url: 'https://example.com/historical', publishedDate: '2020-06-01' },
+      { url: 'https://example.com/recent', publishedDate: '2026-01-01' },
+      { url: 'https://example.com/unknown' },
+    ] });
+  });
+  const result = await discover('React', 'jobs', { EXA_API_KEY: 'test-key' }, { limit: 10, filters, detailed: false });
+  assert.deepEqual(result.results.map(row => new URL(row.url).pathname), ['/historical']);
 });

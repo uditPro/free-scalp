@@ -1,6 +1,6 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import { normalizeResults, type SearchResult } from './validation';
+import { normalizeResults, sortResults, type SearchResult } from './validation';
 import { domainMatches, includedDomains, providerFilters, type SearchOptions, type SearchFilters } from './search-options';
 import { localWorkerSearch } from './worker';
 
@@ -20,13 +20,14 @@ export function discoveryProvider(env: Environment = process.env): DiscoveryProv
 
 export function discoveryQuery(query: string, kind: Kind) {
   const prefix = { jobs: 'Job openings and hiring opportunities: ', clients: 'Public requests to hire freelancers or independent service providers: ', research: '' }[kind];
+  const recencyPreference = 'Prefer recently published relevant sources, then older relevant sources. Respect any specified publication date filters; otherwise do not restrict the date range. Publication dates do not prove a page is current or a listing is open.';
   return {
-    query: prefix + query,
+    query: prefix + query + '\n' + recencyPreference,
     objective: {
       jobs: 'Find relevant original job postings and job-board listings with source URLs. Prefer recent direct employer postings. Do not invent roles, infer open status, or guarantee availability.',
       clients: 'Find relevant public requests for services, freelance project postings, and discussions of a specific need. Prefer requests by prospective buyers, not lists of agencies selling services. Do not infer purchase intent or invent contacts.',
       research: 'Find useful original sources and substantive public discussions directly relevant to the query, with source URLs. Do not invent findings.',
-    }[kind],
+    }[kind] + ' ' + recencyPreference,
   };
 }
 
@@ -114,8 +115,9 @@ export async function discover(query: string, kind: Kind, env: Environment = pro
   const advanced = options.detailed || options.limit > 10 || Object.keys(options.filters).length > 0;
   const filters = providerFilters(options.filters);
   const finish = (rows: SearchResult[]) => {
-    const results = filterResults(rows, options.filters);
+    const results = sortResults(filterResults(rows, options.filters)).slice(0, options.limit).map((result, index) => ({ ...result, id: String(index + 1) }));
     const warnings: string[] = ['Results are public indexed pages, not authenticated social-media scraping. Availability and completeness vary by source.'];
+    warnings.push('Results are sorted newest-first by publication metadata, with unknown dates last. Publication metadata does not prove a page is current or a listing is still open.');
     if (results.length < options.limit) warnings.push(`Requested up to ${options.limit}; ${results.length} unique matching sources returned. No additional matches are invented.`);
     if (options.filters.location || options.filters.country) warnings.push('Location is a relevance preference, not verified employer location or work eligibility. Check the original listing.');
     if (options.filters.publishedAfter || options.filters.publishedBefore) warnings.push('Publication-time filtering uses provider metadata; undated sources are excluded. This is not a guarantee that a job is still open.');
@@ -130,7 +132,7 @@ export async function discover(query: string, kind: Kind, env: Environment = pro
   const workerWarnings = worker?.warnings ?? [];
   const merge = (remote: SearchResult[]) => {
     const seen = new Set<string>();
-    return [...workerResults, ...remote].filter(result => { if (seen.has(result.url)) return false; seen.add(result.url); return true; }).slice(0, options.limit);
+    return [...workerResults, ...remote].filter(result => { if (seen.has(result.url)) return false; seen.add(result.url); return true; });
   };
   if (provider === 'exa-api') {
     const upstream = await fetch('https://api.exa.ai/search', {

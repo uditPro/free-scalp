@@ -16,6 +16,7 @@ export default function SearchResults({ results, warnings, query }: { results: S
   }
   return <section aria-live="polite">
     <div className="results-heading"><div><h2>Your discoveries <span>{results.length}</span></h2><p>Results for “{query}”</p></div><button className="button button-outline button-small" disabled={!results.length} onClick={exportCsv}><Download size={15}/>Export all {results.length}</button></div>
+    <p className="muted small">Newest published sources first, then older sources. Undated sources appear last. Publication dates do not confirm that a job or opportunity is still available.</p>
     {warnings.length > 0 && <details className="coverage-notes"><summary>Source coverage and result limits</summary>{warnings.map(warning => <p key={warning}>{warning}</p>)}</details>}
     {results.length ? <div className="real-results">{results.slice((current - 1) * 20, current * 20).map(result => {
       const url = safeExternalUrl(result.url);

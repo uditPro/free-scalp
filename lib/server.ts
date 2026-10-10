@@ -28,6 +28,22 @@ export async function supabase() {
     cookies: { getAll: () => jar.getAll(), setAll: (entries: { name: string; value: string; options: CookieOptions }[]) => { for (const { name, value, options } of entries) jar.set(name, value, options); } },
   });
 }
+export function supabaseForResponse(request: Request, response: NextResponse) {
+  const { url, publishableKey } = supabaseConfig();
+  if (!url || !publishableKey || publishableKey.startsWith('sb_secret_')) throw new ApiError(503, 'Authentication is not configured. Set the Supabase URL and publishable key.');
+  return createServerClient(url, publishableKey, {
+    global: { fetch: timedFetch },
+    cookies: {
+      getAll: () => request.headers.get('cookie')?.split('; ').filter(Boolean).map(value => {
+        const separator = value.indexOf('=');
+        return { name: separator < 0 ? value : value.slice(0, separator), value: separator < 0 ? '' : value.slice(separator + 1) };
+      }) ?? [],
+      setAll: (entries: { name: string; value: string; options: CookieOptions }[]) => {
+        for (const { name, value, options } of entries) response.cookies.set(name, value, options);
+      },
+    },
+  });
+}
 export function admin() { const { url, secretKey } = supabaseConfig(); if (!url || !secretKey) throw new ApiError(503, 'Server-side services are not configured.'); return createClient(url, secretKey, { auth: { persistSession: false, autoRefreshToken: false }, global: { fetch: timedFetch } }); }
 export async function identity() { const db = await supabase(); const { data, error } = await db.auth.getUser(); if (error || !data.user) throw new ApiError(401, 'Please sign in to continue.'); return { db, user: data.user }; }
 export async function json<T>(request: Request, schema: ZodType<T>): Promise<T> {

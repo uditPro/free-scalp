@@ -50,10 +50,17 @@ export function parseMcpResults(payload: unknown, options: { limit?: number; det
     // Advanced Exa may return one JSON object in a text block. Parse only its
     // declared results array; arbitrary links inside prose never become results.
     try {
-      const parsed = JSON.parse(text) as { results?: unknown[] };
-      if (Array.isArray(parsed.results)) {
+      const parsed = JSON.parse(text) as unknown;
+      const parsedRows = Array.isArray(parsed)
+        ? parsed
+        : parsed && typeof parsed === 'object'
+          ? ((parsed as { results?: unknown[]; items?: unknown[]; data?: { results?: unknown[] } }).results
+            ?? (parsed as { items?: unknown[] }).items
+            ?? (parsed as { data?: { results?: unknown[] } }).data?.results)
+          : undefined;
+      if (Array.isArray(parsedRows)) {
         structured = true;
-        rows.push(...parsed.results.filter(item => item && typeof item === 'object').map(item => {
+        rows.push(...parsedRows.filter(item => item && typeof item === 'object').map(item => {
           const value = item as Record<string, unknown>;
           return { title: typeof value.title === 'string' ? value.title : '', url: typeof value.url === 'string' ? value.url : '', text: typeof value.text === 'string' ? value.text : Array.isArray(value.highlights) ? value.highlights.filter(v => typeof v === 'string').join('\n') : '', publishedDate: typeof value.publishedDate === 'string' ? value.publishedDate : undefined, author: typeof value.author === 'string' ? value.author : undefined };
         }));
@@ -69,6 +76,14 @@ export function parseMcpResults(payload: unknown, options: { limit?: number; det
       const author = /^Author:\s*([^\n]+)/m.exec(match[3])?.[1]?.trim();
       const excerpt = match[3].replace(/^(?:Published(?: Date)?:[^\n]*\n|Author:[^\n]*\n)*/, '').replace(/^(?:Highlights|Text|Content):\s*/, '').trim();
       rows.push({ title: match[1].trim(), url: match[2], text: excerpt, publishedDate, author });
+    }
+    // Some MCP versions render JSON as a Markdown list instead of returning
+    // structured content. Accept only explicit title/link pairs; never turn
+    // arbitrary URLs inside prose into search results.
+    if (!rows.length) {
+      for (const match of text.matchAll(/^\s*(?:[-*]\s+)?\[([^\]]{1,300})\]\((https:\/\/[^)\s]+)\)(?:\s*[-–—:]\s*(.*))?\s*$/gm)) {
+        rows.push({ title: match[1].trim(), url: match[2], text: (match[3] ?? '').trim() });
+      }
     }
   }
   if (!rows.length && !structured && !blocks.every(block => /no (?:search )?results|no matching|^\s*$/.test(block.toLowerCase()))) throw new DiscoveryError(502, 'The search provider returned an unsupported result format.');

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { authSchema, checkoutSchema, searchSchema, safeUrl, normalizeResults, quotaLimit, hasQuota } from '../lib/validation';
+import { parseMcpResults } from '../lib/discovery';
 
 assert.deepEqual(searchSchema.parse({ query: '  solar jobs  ', kind: 'jobs' }), { query: 'solar jobs', kind: 'jobs' });
 for (const value of [{ query: 'x', kind: 'jobs' }, { query: 'abc', kind: 'shell' }, { query: 'x'.repeat(501), kind: 'research' }, { query: 'abc', kind: 'clients', plan: 'pro' }]) assert.equal(searchSchema.safeParse(value).success, false);
@@ -15,4 +16,8 @@ const rows = Array.from({ length: 25 }, (_, i) => ({ url: `https://example.com/$
 const results = normalizeResults({ results: [{ url: 'javascript:bad' }, rows[0], ...rows] });
 assert.equal(results.length, 10); assert.equal(results[0].title.length, 300); assert.equal(results[0].description.length, 1200); assert.equal(new Set(results.map(x => x.url)).size, 10); assert.equal(results[0].source, 'example.com');
 assert.deepEqual(normalizeResults(null), []); assert.deepEqual(normalizeResults({ results: [null, {}, 4] }), []);
+
+const mcpJsonArray = JSON.stringify([{ title: 'Example role', url: 'https://jobs.example.com/role/1', highlights: ['Remote role'] }]);
+assert.equal(parseMcpResults({ content: [{ type: 'text', text: mcpJsonArray }] })[0]?.title, 'Example role');
+assert.equal(parseMcpResults({ content: [{ type: 'text', text: '- [Example project](https://example.com/project) - public brief' }] })[0]?.url, 'https://example.com/project');
 console.log('Validation, quota boundaries, and result URL tests passed.');

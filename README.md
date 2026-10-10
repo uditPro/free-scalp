@@ -29,7 +29,10 @@ Create `.env.local` using `.env.example` and supply your own service values priv
    provide an `EXA_API_KEY`; `SEARCH_PROVIDER=auto` chooses the dedicated API when the
    key exists. Searches save only normalized source-linked results in Supabase.
 5. Configure Stripe recurring Starter/Pro prices, customer portal and signed webhook endpoint.
-6. Set `APP_URL` to the exact origin, including port locally; use HTTPS in production.
+6. Set `APP_URL` to the exact canonical origin, including port locally; use HTTPS in production.
+   Use the same host that Vercel does not redirect (for example, if Vercel redirects the apex
+   to `www`, set `APP_URL=https://www.reachflow.lol`). This keeps the Supabase PKCE cookie on
+   the host that receives the OAuth callback.
 7. For Google sign-in, enable Google under Supabase **Authentication → Providers → Google**.
    In Google Cloud OAuth credentials, add the Supabase callback URL shown by Supabase
    (normally `https://<project-ref>.supabase.co/auth/v1/callback`) as an authorized redirect URI,
@@ -100,8 +103,8 @@ callback URLs manually. Never share management or secret keys in chat.
    the **same browser** (the default flow uses PKCE). Check `/dashboard`, sign out,
    log in again, then verify the password-reset email and new-password flow.
    `/login` and `/signup` offer a confirmation-email resend action.
-   Those screens also offer **Continue with Google**; the app returns to the same apex or
-   `www` hostname that started the flow so the PKCE cookie remains available.
+   Those screens also offer **Continue with Google**; the callback uses the exact Supabase
+   allow-list URL so the PKCE cookie remains available.
 
 For email links that must work across browsers, Supabase email templates can use
 the supported token-hash callback instead of the default PKCE confirmation URL:

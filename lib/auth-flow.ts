@@ -24,7 +24,9 @@ export function publicAuthError(error: AuthError, fallback: string) {
 export async function performAuth(input: z.infer<typeof authSchema>, auth: Auth, callback: string) {
   switch (input.action) {
     case 'oauth': {
-      const { data, error } = await auth.signInWithOAuth({ provider: input.provider, options: { redirectTo: `${callback}?flow=google`, skipBrowserRedirect: true } });
+      // Keep this URL exactly equal to the Supabase allow-list entry. The
+      // provider returns the PKCE code to this same hostname.
+      const { data, error } = await auth.signInWithOAuth({ provider: input.provider, options: { redirectTo: callback, skipBrowserRedirect: true } });
       if (error || !data.url) throw publicAuthError(error ?? { status: 503 }, 'Google sign-in is temporarily unavailable. Please try again later.');
       return { ok: true, redirectTo: data.url };
     }
@@ -71,7 +73,7 @@ export async function completeAuthCallback(url: URL, auth: Auth) {
   const code = url.searchParams.get('code');
   const tokenHash = url.searchParams.get('token_hash');
   const type = url.searchParams.get('type');
-  const failure = url.searchParams.get('flow') === 'google' ? '/login?error=oauth' : '/login?error=confirmation';
+  const failure = url.searchParams.has('error') ? '/login?error=oauth' : '/login?error=confirmation';
   if (url.searchParams.has('error')) return failure;
   if (code) {
     const { error } = await auth.exchangeCodeForSession(code);

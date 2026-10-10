@@ -47,7 +47,7 @@ test('auth schemas require only the appropriate fields per action', () => {
 test('Google OAuth returns a provider redirect without exposing provider payloads', async () => {
   const result = await performAuth({ action: 'oauth', provider: 'google' }, mockAuth({
     signInWithOAuth: async (input: unknown) => {
-      assert.deepEqual(input, { provider: 'google', options: { redirectTo: callback + '?flow=google', skipBrowserRedirect: true } });
+      assert.deepEqual(input, { provider: 'google', options: { redirectTo: callback, skipBrowserRedirect: true } });
       return { data: { url: 'https://accounts.google.com/o/oauth2/auth?state=test' }, error: null };
     },
   }), callback);
@@ -75,12 +75,12 @@ test('Google initiation reports provider failures and missing redirects safely',
 });
 
 test('Google callback exchanges PKCE code and safely handles cancellation and expired codes', async () => {
-  const url = 'https://www.reachflow.lol/api/auth/callback?flow=google';
+  const url = 'https://www.reachflow.lol/api/auth/callback';
   const auth = mockAuth({ exchangeCodeForSession: async (code: string) => { assert.equal(code, 'test-code'); return { error: null }; } });
-  assert.equal(await completeAuthCallback(new URL(url + '&code=test-code'), auth), '/dashboard');
-  assert.equal(await completeAuthCallback(new URL(url + '&error=access_denied&error_description=private'), mockAuth({})), '/login?error=oauth');
-  assert.equal(await completeAuthCallback(new URL(url), mockAuth({})), '/login?error=oauth');
-  assert.equal(await completeAuthCallback(new URL(url + '&code=expired'), mockAuth({ exchangeCodeForSession: async () => ({ error: {} }) })), '/login?error=oauth');
+  assert.equal(await completeAuthCallback(new URL(url + '?code=test-code'), auth), '/dashboard');
+  assert.equal(await completeAuthCallback(new URL(url + '?error=access_denied&error_description=private'), mockAuth({})), '/login?error=oauth');
+  assert.equal(await completeAuthCallback(new URL(url), mockAuth({})), '/login?error=confirmation');
+  assert.equal(await completeAuthCallback(new URL(url + '?code=expired'), mockAuth({ exchangeCodeForSession: async () => ({ error: {} }) })), '/login?error=confirmation');
 });
 
 test('post-login navigation cannot escape the application', () => {
@@ -144,7 +144,7 @@ test('auth callback supports PKCE and strictly limits redirect destinations', as
   assert.equal(await completeAuthCallback(new URL(callback + '?code=test-code'), auth), '/dashboard');
   assert.equal(await completeAuthCallback(new URL(callback + '?code=test-code&next=recovery'), auth), '/reset-password');
   assert.equal(await completeAuthCallback(new URL(callback + '?code=test-code&next=https://evil.example'), auth), '/dashboard');
-  assert.equal(await completeAuthCallback(new URL(callback + '?error=expired'), auth), '/login?error=confirmation');
+  assert.equal(await completeAuthCallback(new URL(callback + '?error=expired'), auth), '/login?error=oauth');
   assert.equal(await completeAuthCallback(new URL(callback + '?code=expired'), mockAuth({ exchangeCodeForSession: async () => ({ error: {} }) })), '/login?error=confirmation');
 });
 

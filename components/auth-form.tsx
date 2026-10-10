@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowUpRight, LoaderCircle } from "lucide-react";
 import { Brand } from "./brand";
 import { api } from "./api-client";
+import { safeAuthDestination } from "@/lib/auth-navigation";
 
-type AuthResult = { ok: boolean; authenticated?: boolean; message?: string };
+type AuthResult = { ok: boolean; authenticated?: boolean; message?: string; redirectTo?: string };
 export default function AuthForm({ mode }: { mode: "login" | "signup" | "reset" }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -14,6 +15,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" | "reset" 
   const [resendPending, setResendPending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("error") === "oauth") setError("Google sign-in was cancelled or could not be completed. Please try again in this browser, or sign in with email.");
     if (new URLSearchParams(window.location.search).get("error") === "confirmation") setError("That confirmation link could not be verified. It may have expired, or opened in a different browser. Enter your email below to request a fresh confirmation email.");
   }, []);
   useEffect(() => {
@@ -33,11 +35,19 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" | "reset" 
     const data = new FormData(event.currentTarget);
     try {
       const result = await api<AuthResult>("/api/auth", { action: mode, email, ...(mode !== "reset" ? { password: data.get("password") } : {}) });
-      if (result.authenticated) { const next = new URLSearchParams(window.location.search).get("next"); window.location.assign(next?.startsWith("/") ? next : "/dashboard"); return; }
+      if (result.authenticated) { const next = new URLSearchParams(window.location.search).get("next"); window.location.assign(safeAuthDestination(next)); return; }
       setMessage(result.message ?? (mode === "signup" ? "Check your inbox for a verification link. Open it in this browser to finish creating your account." : "If an account exists, you’ll receive an email with instructions."));
       if (mode === "signup") setCooldown(60);
     } catch (err) { setError(err instanceof Error ? err.message : "Something went wrong. Please try again."); }
     finally { setPending(false); }
+  }
+  async function continueWithGoogle() {
+    setPending(true); setError(""); setMessage("");
+    try {
+      const result = await api<AuthResult>("/api/auth", { action: "oauth", provider: "google" });
+      if (!result.redirectTo) throw new Error("Google sign-in could not be started.");
+      window.location.assign(result.redirectTo);
+    } catch (err) { setError(err instanceof Error ? err.message : "Google sign-in could not be started."); setPending(false); }
   }
   const busy = pending || resendPending;
   return <main id="main" className="auth-layout">
@@ -63,6 +73,10 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" | "reset" 
           {message && <div className="notice notice-success" role="status">{message}{mode === "signup" && <p>Check your spam folder too. Open the email link in this browser.</p>}</div>}
           <button className="button full-width" disabled={busy}>{pending ? <LoaderCircle size={18} className="spin"/> : <>{mode === "signup" ? "Create your account" : mode === "reset" ? "Send reset link" : "Sign in"}<ArrowUpRight size={18}/></>}</button>
         </form>
+        {mode !== "reset" && <>
+          <div className="auth-divider"><span>or</span></div>
+          <button className="button button-outline full-width" type="button" onClick={continueWithGoogle} disabled={busy}>Continue with Google</button>
+        </>}
         {mode !== "reset" && <button className="text-button auth-resend" type="button" onClick={resend} disabled={busy || cooldown > 0}>{resendPending ? "Sending…" : cooldown ? `Resend available in ${cooldown}s` : "Resend confirmation email"}</button>}
         <p className="auth-switch">{mode === "signup" ? <>Already have an account? <Link href="/login">Sign in</Link></> : mode === "reset" ? <Link href="/login">Back to sign in</Link> : <>New around here? <Link href="/signup">Create an account</Link></>}</p>
       </div>

@@ -20,6 +20,18 @@ export function applicationOrigin(value: string | undefined): string {
   } catch { throw new Error('APP_URL must be your exact application origin, using HTTPS except on localhost.'); }
 }
 
+// Only the configured origin and its exact public HTTPS www/apex alias.
+// Never derive trust from Host, X-Forwarded-Host, or arbitrary subdomains.
+export function isApplicationOrigin(origin: string | null, configured: string): boolean {
+  const canonical = new URL(applicationOrigin(configured));
+  if (origin === canonical.origin) return true;
+  if (canonical.protocol !== 'https:' || !canonical.hostname.includes('.') ||
+      /^[\d.]+$/.test(canonical.hostname) || canonical.hostname.endsWith('.vercel.app') ||
+      canonical.hostname.endsWith('.localhost')) return false;
+  canonical.hostname = canonical.hostname.startsWith('www.') ? canonical.hostname.slice(4) : `www.${canonical.hostname}`;
+  return origin === canonical.origin;
+}
+
 export function serviceStatus(env: Environment = process.env) {
   const config = supabaseConfig(env);
   let validOrigin = false;

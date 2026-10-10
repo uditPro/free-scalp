@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { applicationOrigin, serviceStatus, supabaseConfig } from '../lib/config';
+import { applicationOrigin, isApplicationOrigin, serviceStatus, supabaseConfig } from '../lib/config';
+import { safeAuthDestination } from '../lib/auth-navigation';
 import { authSchema } from '../lib/validation';
 import { AuthFlowError, completeAuthCallback, performAuth, publicAuthError } from '../lib/auth-flow';
 import { readSession } from '../lib/session-state';
@@ -33,12 +34,60 @@ test('canonical application origin rejects unsafe and malformed origins', () => 
 });
 
 test('auth schemas require only the appropriate fields per action', () => {
+  assert.equal(authSchema.safeParse({ action: 'oauth', provider: 'google' }).success, true);
+  assert.equal(authSchema.safeParse({ action: 'oauth', provider: 'github' }).success, false);
   for (const action of ['login', 'signup', 'reset', 'resend']) assert.equal(authSchema.safeParse({ action }).success, false);
   assert.equal(authSchema.safeParse({ action: 'login', email, password: '123456' }).success, true, 'existing six-character passwords can still log in');
   assert.equal(authSchema.safeParse({ ...signup, password: '123456' }).success, false);
   assert.equal(authSchema.safeParse({ ...signup, plan: 'pro' }).success, false);
   assert.equal(authSchema.safeParse({ action: 'logout' }).success, true);
   assert.equal(authSchema.safeParse({ action: 'update-password' }).success, false);
+});
+
+test('Google OAuth returns a provider redirect without exposing provider payloads', async () => {
+  const result = await performAuth({ action: 'oauth', provider: 'google' }, mockAuth({
+    signInWithOAuth: async (input: unknown) => {
+      assert.deepEqual(input, { provider: 'google', options: { redirectTo: callback + '?flow=google', skipBrowserRedirect: true } });
+      return { data: { url: 'https://accounts.google.com/o/oauth2/auth?state=test' }, error: null };
+    },
+  }), callback);
+  assert.equal(result.redirectTo, 'https://accounts.google.com/o/oauth2/auth?state=test');
+});
+
+test('origin validation accepts only the exact HTTPS apex/www pair', () => {
+  for (const configured of ['https://reachflow.lol', 'https://www.reachflow.lol']) {
+    assert.equal(isApplicationOrigin('https://reachflow.lol', configured), true);
+    assert.equal(isApplicationOrigin('https://www.reachflow.lol', configured), true);
+    for (const origin of [null, 'null', '', 'http://reachflow.lol', 'https://evil.example', 'https://reachflow.lol.evil.example', 'https://preview.reachflow.lol', 'https://reachflow.lol:444', 'https://user@reachflow.lol', 'https://reachflow.lol/path']) {
+      assert.equal(isApplicationOrigin(origin, configured), false, String(origin));
+    }
+  }
+  assert.equal(isApplicationOrigin('http://localhost:3000', 'http://localhost:3000'), true);
+  assert.equal(isApplicationOrigin('http://www.localhost:3000', 'http://localhost:3000'), false);
+  assert.equal(isApplicationOrigin('https://www.free-scalp.vercel.app', 'https://free-scalp.vercel.app'), false);
+});
+
+test('Google initiation reports provider failures and missing redirects safely', async () => {
+  for (const result of [{ data: { url: null }, error: null }, { data: { url: null }, error: { status: 500, message: 'private-provider-detail' } }]) {
+    await assert.rejects(performAuth({ action: 'oauth', provider: 'google' }, mockAuth({ signInWithOAuth: async () => result }), callback),
+      (error: unknown) => error instanceof AuthFlowError && error.status === 503 && !error.message.includes('private-provider-detail'));
+  }
+});
+
+test('Google callback exchanges PKCE code and safely handles cancellation and expired codes', async () => {
+  const url = 'https://www.reachflow.lol/api/auth/callback?flow=google';
+  const auth = mockAuth({ exchangeCodeForSession: async (code: string) => { assert.equal(code, 'test-code'); return { error: null }; } });
+  assert.equal(await completeAuthCallback(new URL(url + '&code=test-code'), auth), '/dashboard');
+  assert.equal(await completeAuthCallback(new URL(url + '&error=access_denied&error_description=private'), mockAuth({})), '/login?error=oauth');
+  assert.equal(await completeAuthCallback(new URL(url), mockAuth({})), '/login?error=oauth');
+  assert.equal(await completeAuthCallback(new URL(url + '&code=expired'), mockAuth({ exchangeCodeForSession: async () => ({ error: {} }) })), '/login?error=oauth');
+});
+
+test('post-login navigation cannot escape the application', () => {
+  assert.equal(safeAuthDestination('/dashboard?tab=history'), '/dashboard?tab=history');
+  for (const next of [null, '', '//evil.example', '/\\evil.example', 'https://evil.example', 'javascript:alert(1)', '/\n/evil.example']) {
+    assert.equal(safeAuthDestination(next), '/dashboard');
+  }
 });
 
 test('signup returns confirmation-required state without exposing Supabase user or session', async () => {

@@ -30,6 +30,10 @@ Create `.env.local` using `.env.example` and supply your own service values priv
    key exists. Searches save only normalized source-linked results in Supabase.
 5. Configure Stripe recurring Starter/Pro prices, customer portal and signed webhook endpoint.
 6. Set `APP_URL` to the exact origin, including port locally; use HTTPS in production.
+7. For Google sign-in, enable Google under Supabase **Authentication → Providers → Google**.
+   In Google Cloud OAuth credentials, add the Supabase callback URL shown by Supabase
+   (normally `https://<project-ref>.supabase.co/auth/v1/callback`) as an authorized redirect URI,
+   then add the Google client ID and secret to the Supabase provider settings.
 
 See `supabase/README.md` for the detailed database/auth/billing checklist.
 
@@ -81,6 +85,9 @@ callback URLs manually. Never share management or secret keys in chat.
    - `http://localhost:3000/api/auth/callback`
    - `http://localhost:3000/api/auth/callback?next=recovery`
    Add the equivalent HTTPS URLs before deploying; do not use broad production wildcards.
+   If both apex and `www` domains are active, add both production callbacks:
+   `https://reachflow.lol/api/auth/callback` and
+   `https://www.reachflow.lol/api/auth/callback`.
 3. Keep email confirmation enabled. Configure custom SMTP to deliver mail to your
    users; Supabase's default mail sender may restrict recipients and sending rates.
 4. Apply `supabase/migrations/001_initial.sql` in the Supabase SQL editor. The
@@ -93,6 +100,8 @@ callback URLs manually. Never share management or secret keys in chat.
    the **same browser** (the default flow uses PKCE). Check `/dashboard`, sign out,
    log in again, then verify the password-reset email and new-password flow.
    `/login` and `/signup` offer a confirmation-email resend action.
+   Those screens also offer **Continue with Google**; the app returns to the same apex or
+   `www` hostname that started the flow so the PKCE cookie remains available.
 
 For email links that must work across browsers, Supabase email templates can use
 the supported token-hash callback instead of the default PKCE confirmation URL:

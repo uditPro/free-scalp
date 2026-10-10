@@ -23,6 +23,11 @@ export function publicAuthError(error: AuthError, fallback: string) {
 
 export async function performAuth(input: z.infer<typeof authSchema>, auth: Auth, callback: string) {
   switch (input.action) {
+    case 'oauth': {
+      const { data, error } = await auth.signInWithOAuth({ provider: input.provider, options: { redirectTo: `${callback}?flow=google`, skipBrowserRedirect: true } });
+      if (error || !data.url) throw publicAuthError(error ?? { status: 503 }, 'Google sign-in is temporarily unavailable. Please try again later.');
+      return { ok: true, redirectTo: data.url };
+    }
     case 'logout': {
       const { error } = await auth.signOut({ scope: 'local' });
       if (error) throw publicAuthError(error, 'Could not sign out. Please try again.');
@@ -66,7 +71,7 @@ export async function completeAuthCallback(url: URL, auth: Auth) {
   const code = url.searchParams.get('code');
   const tokenHash = url.searchParams.get('token_hash');
   const type = url.searchParams.get('type');
-  const failure = '/login?error=confirmation';
+  const failure = url.searchParams.get('flow') === 'google' ? '/login?error=oauth' : '/login?error=confirmation';
   if (url.searchParams.has('error')) return failure;
   if (code) {
     const { error } = await auth.exchangeCodeForSession(code);

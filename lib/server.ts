@@ -4,12 +4,20 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { ZodError, type ZodType } from 'zod';
-import { applicationOrigin, supabaseConfig } from './config';
+import { applicationOrigin, isApplicationOrigin, supabaseConfig } from './config';
 
 export class ApiError extends Error { constructor(public status: number, message: string) { super(message); } }
 export function required(name: string) { const value = process.env[name]?.trim(); if (!value) throw new ApiError(503, 'This service is not configured.'); return value; }
 export function appOrigin() { try { return applicationOrigin(process.env.APP_URL); } catch { throw new ApiError(503, 'Application URL is not configured.'); } }
-export function checkOrigin(request: Request) { if (request.headers.get('origin') !== appOrigin()) throw new ApiError(403, 'Request origin is not allowed.'); }
+export function checkOrigin(request: Request) {
+  const origin = request.headers.get('origin');
+  if (!isApplicationOrigin(origin, appOrigin())) throw new ApiError(403, 'Request origin is not allowed.');
+}
+export function authRequestOrigin(request: Request) {
+  const origin = new URL(request.url).origin;
+  if (!isApplicationOrigin(origin, appOrigin())) throw new ApiError(403, 'Open authentication on the configured application domain.');
+  return origin;
+}
 const timedFetch: typeof fetch = (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(15000) });
 export async function supabase() {
   const jar = await cookies();

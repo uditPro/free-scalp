@@ -5,6 +5,7 @@ export const searchSchema = z.object({ query: z.string().trim().min(3).max(500),
 const email = z.string().trim().email().max(254);
 const newPassword = z.string().min(8).max(128);
 export const authSchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('oauth'), provider: z.literal('google') }).strict(),
   z.object({ action: z.literal('login'), email, password: z.string().min(1).max(128) }).strict(),
   z.object({ action: z.literal('signup'), email, password: newPassword }).strict(),
   z.object({ action: z.literal('reset'), email }).strict(),

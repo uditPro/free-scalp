@@ -1,5 +1,25 @@
-export const dynamic = "force-static";
+import { blogArticles, siteUrl } from "@/lib/blog";
 
 export function GET() {
-  return new Response(`# ReachFlow\n\n## What it is\nReachFlow is a web workspace for discovering jobs, prospective freelance clients, and research across supported public internet sources.\n\n## How results work\nSigned-in searches query configured connectors, currently an Agent-Reach-compatible hosted Exa MCP path or a dedicated Exa API key. Results include source URLs and descriptions from the provider. The homepage interactive preview is explicitly sample data, not live results.\n\n## Limits and honesty\nReachFlow does not search every website, bypass login walls, read browser cookies, guarantee that a listing is current, verify a lead, send outreach, or submit applications. Availability depends on connector, source, region, provider rate limits, and user-authorized configuration.\n\n## User actions\nUsers can search jobs, clients, or research; open original sources; revisit search history; and export current results as CSV.\n\n## Canonical pages\n- Home: /\n- Pricing: /pricing\n- Workspace: /dashboard\n- Questions: /#faq\n`, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" } });
+  const text = [
+    "# ReachFlow",
+    "> A workspace for discovering jobs, potential freelance clients, and public-web research with source links.",
+    "", "## Product",
+    `- [Home](${siteUrl}/): Product overview and supported use cases.`,
+    `- [Pricing](${siteUrl}/pricing): Plans and search allowances.`,
+    `- [Blog](${siteUrl}/blog): Source-backed practical guides.`,
+    `- [Sitemap](${siteUrl}/sitemap.xml): Public canonical pages.`,
+    "", "## Guides",
+    ...blogArticles.map(article => `- [${article.title}](${siteUrl}/blog/${article.slug}): ${article.description}`),
+    "", "## Capabilities and limitations",
+    "Search uses configured providers and public indexed sources. Coverage, dates, and completeness vary.",
+    "Publication dates do not confirm that opportunities remain open. Verify the original source.",
+    "ReachFlow does not bypass logins, promise universal internet coverage, verify buyer intent, send outreach, or submit job applications.",
+    "Account-specific dashboard, search history, and API routes are not public editorial sources.",
+    "", "## Editorial notes",
+    "Articles include supporting sources, publication dates, suggested timelines, and clearly stated limitations.",
+    "ReachFlow does not guarantee rankings, traffic, hiring outcomes, or inclusion in AI answers.",
+    "This file is a navigation aid, not a requirement for search indexing or AI citations.",
+  ].join("\n");
+  return new Response(text, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" } });
 }

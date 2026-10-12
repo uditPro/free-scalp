@@ -1,0 +1,2 @@
+import { jobResultSchema } from '@/lib/validation'; import { admin, checkOrigin, identity, json, response, route } from '@/lib/server';
+export const POST = route(async request => { checkOrigin(request); const input = await json(request, jobResultSchema); const { user } = await identity(); const db = admin(); const { data, error } = await db.from('saved_jobs').insert({ user_id: user.id, ...input }).select('*').single(); if (error) throw error; return response({ job: data }, 201); });

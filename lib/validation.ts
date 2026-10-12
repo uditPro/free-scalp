@@ -61,3 +61,19 @@ export function normalizeResults(data: unknown, options: { limit?: number; detai
   }
   return sortResults(results).slice(0, limit).map((result, index) => ({ ...result, id: String(index + 1) }));
 }
+
+const boundedText = (max: number) => z.string().trim().min(1).max(max);
+export const profileSchema = z.object({
+  fullName: z.string().trim().max(160).optional(), headline: z.string().trim().max(240).optional(),
+  location: z.string().trim().max(160).optional(), workAuthorization: z.string().trim().max(240).optional(),
+  skills: z.array(boundedText(80)).max(100).optional(), experience: z.string().trim().max(12000).optional(),
+  education: z.string().trim().max(4000).optional(), preferences: z.object({
+    titles: z.array(boundedText(120)).max(30).optional(), locations: z.array(boundedText(120)).max(30).optional(),
+    remote: z.boolean().optional(), employmentTypes: z.array(z.enum(['full-time','part-time','contract','internship'])).max(10).optional(),
+  }).strict().optional(), resume: z.object({ text: z.string().trim().max(30000), fileName: z.string().trim().max(200).optional() }).strict().optional(),
+}).strict();
+export const jobResultSchema = z.object({ title: boundedText(300), company: z.string().trim().max(240).optional(), location: z.string().trim().max(240).optional(), description: boundedText(30000), url: z.string().trim().max(2048).refine(value => !!safeUrl(value), 'Only safe HTTPS URLs are allowed').optional(), source: z.string().trim().max(120).optional() }).strict();
+export const jobPatchSchema = jobResultSchema.partial().extend({ status: z.enum(['saved','archived','applied']).optional() }).strict();
+export const applicationCreateSchema = z.object({ jobId: z.string().uuid(), notes: z.string().trim().max(8000).optional() }).strict();
+export const applicationPatchSchema = z.object({ status: z.enum(['draft','ready','submitted','withdrawn','rejected','interviewing','offer']).optional(), notes: z.string().trim().max(8000).optional() }).strict();
+export const generateSchema = z.object({ include: z.array(z.enum(['coverLetter','resume','interviewQuestions'])).max(3).optional() }).strict();

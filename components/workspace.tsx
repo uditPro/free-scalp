@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, ArrowUpRight, BriefcaseBusiness, CreditCard, FlaskConical, History, LoaderCircle, LogOut, Search, Settings2, Sparkles, Users, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BriefcaseBusiness, ClipboardList, CreditCard, FlaskConical, History, LoaderCircle, LogOut, Search, Settings2, Sparkles, UserRound, Users, X } from "lucide-react";
 import { Brand } from "./brand";
 import { api, safeExternalUrl } from "./api-client";
 import SearchControls from "./search-controls";
@@ -117,8 +117,10 @@ export default function Workspace() {
       <nav aria-label="Workspace navigation">
         {kinds.map(({ value, title, icon: Icon }) => <button key={value} disabled={searching} className={`sidebar-link ${view === "search" && kind === value ? "active" : ""}`} onClick={() => chooseKind(value)}><Icon size={18}/>{title}</button>)}
         <span className="sidebar-divider"/>
-        <button className={`sidebar-link ${view === "history" ? "active" : ""}`} onClick={() => setView("history")}><History size={18}/>Search history</button>
-        <button className={`sidebar-link ${view === "settings" ? "active" : ""}`} onClick={() => setView("settings")}><Settings2 size={18}/>Workspace settings</button>
+         <button className={`sidebar-link ${view === "history" ? "active" : ""}`} onClick={() => setView("history")}><History size={18}/>Search history</button>
+         <Link className="sidebar-link" href="/applications"><ClipboardList size={18}/>Applications</Link>
+         <Link className="sidebar-link" href="/profile"><UserRound size={18}/>Your profile</Link>
+         <button className={`sidebar-link ${view === "settings" ? "active" : ""}`} onClick={() => setView("settings")}><Settings2 size={18}/>Workspace settings</button>
       </nav>
       <div className="sidebar-upgrade"><Sparkles size={20}/><h3>Room for more.</h3><p>Free: 10 · Starter: 50 · Pro: 100 sources per search, when available.</p><Link href="/pricing">Explore plans <ArrowUpRight size={15}/></Link></div>
       <div className="workspace-account"><span className="avatar">{email ? email[0].toUpperCase() : "?"}</span><div><strong>{email ?? "Your workspace"}</strong><small>{email ? `${plan || "Account"} plan` : "Sign in to get started"}</small></div>{email && <button className="icon-button" aria-label="Sign out" disabled={actionPending} onClick={logout}><LogOut size={16}/></button>}</div>

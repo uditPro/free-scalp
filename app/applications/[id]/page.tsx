@@ -1,0 +1,3 @@
+"use client";
+import Link from "next/link"; import { use } from "react"; import ApplicationWorkspace from "@/components/application-workspace";
+export default function ApplicationPage({ params }: { params: Promise<{ id: string }> }) { const { id } = use(params); return <div className="career-page"><header className="career-header"><Link href="/dashboard" className="career-brand">reachflow<span>.</span></Link><nav><Link href="/applications">Applications</Link><Link href="/profile">Profile</Link></nav></header><main id="main" className="career-main"><ApplicationWorkspace id={id}/></main></div>; }

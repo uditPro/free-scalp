@@ -126,6 +126,9 @@ verifies the session with the Auth service rather than trusting browser claims.
 - Responsive marketing website, sample preview explicitly labeled, pricing and FAQs.
 - Signup/login, verification callback, recovery and password update screens.
 - Search dashboard, source links, history and CSV export.
+- Private candidate profile, explainable job-fit analysis, tailored resume/cover-letter drafts,
+  interview questions, and application tracking. Managed AI is optional; deterministic drafts are
+  used when no AI server is configured.
 - Real Exa API adapter with jobs/clients/research query modes; no fabricated live results.
 - Agent-Reach-compatible hosted Exa MCP connector with keyless smoke-test mode and dedicated API-key mode.
 - Safe Supabase setup preview/apply helper that verifies schema and exact callback redirects.
@@ -138,8 +141,9 @@ verifies the session with the Auth service rather than trusting browser claims.
 
 This is a launch foundation, not a verified production service. Live services have not been tested
 without account configuration. Exa MCP/API is the implemented search connector: no LinkedIn login,
-social account cookies, arbitrary website extraction, AI workflow builder, recurring scheduling,
-email alerts or background worker is included. A search runs synchronously within its request.
+ social account cookies, arbitrary website extraction, recurring scheduling, email alerts, resume
+ binary upload/parser, or background worker is included. Candidate workflow currently stores
+ structured profile/resume text and uses deterministic generation unless managed AI is configured.
 Client discovery means relevant public search results, not verified leads or enriched contacts.
 Failed attempts consume quota; interrupted requests may remain pending and need reconciliation.
 Password recovery uses PKCE and should open in the initiating browser.
@@ -161,7 +165,7 @@ database concurrency, RLS, real email delivery, payment processing or browser in
 ## Deploy and release gate
 
 Deploy this directory to a Next.js-compatible Node host (for example Vercel), set environment variables,
-apply the database migration, update redirect URLs, and register the production Stripe webhook.
+apply migrations 001, 002, and 003_candidate_workflow.sql, update redirect URLs, and register the production Stripe webhook.
 Use `npm run build` and `npm start` for a Node deployment. No live deployment has been performed.
 
 Before accepting customers: test email signup/recovery in-browser, two-user tenant isolation,

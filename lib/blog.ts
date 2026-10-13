@@ -1,3 +1,5 @@
+import { seoOrigin } from "./seo";
+
 export type BlogSection = { heading: string; paragraphs: string[] };
 export type BlogArticle = {
   title: string; slug: string; description: string; category: string;
@@ -238,4 +240,4 @@ articles.forEach((article, index) => {
 });
 export const blogArticles = articles as readonly BlogArticle[];
 export const blogBySlug = new Map(blogArticles.map(article => [article.slug, article]));
-export const siteUrl = process.env.APP_URL || "http://localhost:3000";
+export const siteUrl = seoOrigin();

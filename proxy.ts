@@ -36,9 +36,13 @@ export async function proxy(request: NextRequest) {
   }
   const path = request.nextUrl.pathname;
   const authPage = path === "/login" || path === "/signup";
+  const privatePage = path === "/profile" || path.startsWith("/applications") || path.startsWith("/dashboard");
   if (user && authPage) return copyCookies(response, NextResponse.redirect(new URL("/dashboard", request.url)));
-  if (!user && path.startsWith("/dashboard")) return copyCookies(response, NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(path)}`, request.url)));
+  if (!user && privatePage) {
+    const destination = `${path}${request.nextUrl.search}`;
+    return copyCookies(response, NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(destination)}`, request.url)));
+  }
   return response;
 }
 
-export const config = { matcher: ["/login", "/signup", "/dashboard/:path*"] };
+export const config = { matcher: ["/login", "/signup", "/dashboard/:path*", "/profile", "/applications/:path*"] };

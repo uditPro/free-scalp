@@ -31,8 +31,10 @@ Create `.env.local` using `.env.example` and supply your own service values priv
 5. Configure Stripe recurring Starter/Pro prices, customer portal and signed webhook endpoint.
 6. Set `APP_URL` to the exact canonical origin, including port locally; use HTTPS in production.
    Use the same host that Vercel does not redirect (for example, if Vercel redirects the apex
-   to `www`, set `APP_URL=https://www.reachflow.lol`). This keeps the Supabase PKCE cookie on
-   the host that receives the OAuth callback.
+    to `www`, set `APP_URL=https://www.reachflow.lol`). This keeps the Supabase PKCE cookie on
+    the host that receives the OAuth callback. Set `SEO_CANONICAL_ORIGIN` to that same final
+    host when both apex and `www` aliases are active; it keeps canonical tags, JSON-LD, robots,
+    and the sitemap on one non-redirecting origin.
 7. For Google sign-in, enable Google under Supabase **Authentication → Providers → Google**.
    In Google Cloud OAuth credentials, add the Supabase callback URL shown by Supabase
    (normally `https://<project-ref>.supabase.co/auth/v1/callback`) as an authorized redirect URI,
@@ -155,6 +157,7 @@ Checkout prices are shown by Stripe; set and publish your commercial prices befo
 npm test
 npm run typecheck
 npm run build
+npm run check:seo
 npm audit --omit=dev
 ```
 
@@ -167,6 +170,13 @@ database concurrency, RLS, real email delivery, payment processing or browser in
 Deploy this directory to a Next.js-compatible Node host (for example Vercel), set environment variables,
 apply migrations 001, 002, and 003_candidate_workflow.sql, update redirect URLs, and register the production Stripe webhook.
 Use `npm run build` and `npm start` for a Node deployment. No live deployment has been performed.
+
+After deployment, run `npm run check:seo` against the final public host. It checks the sitemap, robots,
+llms.txt, canonical host, metadata, JSON-LD, article images, auth noindex directives, and private-route
+redirects. Submit the final non-redirecting sitemap URL (`https://www.reachflow.lol/sitemap.xml` for the
+current deployment) in Google Search Console, then use URL Inspection to request indexing for the home,
+resources, blog index, and newly changed articles. Search Console may take days or weeks to crawl and
+choose canonical URLs; a valid sitemap cannot guarantee impressions, clicks, rankings, or AI citations.
 
 Before accepting customers: test email signup/recovery in-browser, two-user tenant isolation,
 parallel quota exhaustion, real search/history, Stripe test checkout/cancellation/replayed webhooks,

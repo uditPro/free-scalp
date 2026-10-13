@@ -8,6 +8,8 @@ export function GET() {
     `- [Home](${siteUrl}/): Product overview and supported use cases.`,
     `- [Pricing](${siteUrl}/pricing): Plans and search allowances.`,
     `- [Blog](${siteUrl}/blog): Source-backed practical guides.`,
+    `- [Opportunity research toolkit](${siteUrl}/resources): A reusable source-first research method and checklist.`,
+    `- [Editorial policy](${siteUrl}/editorial-policy): How guides are sourced, dated, updated, and corrected.`,
     `- [Sitemap](${siteUrl}/sitemap.xml): Public canonical pages.`,
     "", "## Guides",
     ...blogArticles.map(article => `- [${article.title}](${siteUrl}/blog/${article.slug}): ${article.description}`),

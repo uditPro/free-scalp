@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { StructuredData } from "@/components/structured-data";
+import { seoOrigin } from "@/lib/seo";
+
+const origin = seoOrigin();
 
 export const metadata: Metadata = {
   title: { default: "ReachFlow — Find your next opening.", template: "%s · ReachFlow" },
   description: "Discover job opportunities, prospective clients, and research across supported internet sources. Less tab-hopping. More possibility.",
-  metadataBase: new URL(process.env.APP_URL || "http://localhost:3000"),
+  metadataBase: new URL(origin),
   applicationName: "ReachFlow",
   keywords: ["job discovery", "freelance clients", "public web research", "remote jobs", "opportunity search"],
   alternates: { canonical: "/" },

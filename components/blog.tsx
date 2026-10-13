@@ -7,6 +7,25 @@ export function BlogCard({ article }: { article: BlogArticle }) {
   return <article className="blog-card"><Link href={`/blog/${article.slug}`}><Image src={article.hero.src} alt={article.hero.alt} width={article.hero.width} height={article.hero.height}/><div className="blog-card-copy"><span className="eyebrow">{article.category} · {article.readingTime}</span><h2>{article.title}</h2><p>{article.description}</p><span className="text-button">Read the guide <span aria-hidden="true">↗</span></span></div></Link></article>;
 }
 
+export function BlogCollectionJsonLd({ articles }: { articles: readonly BlogArticle[] }) {
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "The ReachFlow field guide",
+    url: `${siteUrl}/blog`,
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: articles.map((article, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: article.title,
+        url: `${siteUrl}/blog/${article.slug}`,
+      })),
+    },
+  };
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, "\\u003c") }} />;
+}
+
 export function ArticleBody({ article }: { article: BlogArticle }) {
   return <>
     <div className="article-answer"><span className="eyebrow">The short answer</span><p>{article.directAnswer}</p></div>
@@ -18,7 +37,8 @@ export function ArticleBody({ article }: { article: BlogArticle }) {
 }
 
 export function ArticleJsonLd({ article }: { article: BlogArticle }) {
-  const graph: Record<string, unknown>[] = [{ "@type": "Article", "@id": `${siteUrl}/blog/${article.slug}#article`, headline: article.title, description: article.description, datePublished: article.publishedAt, dateModified: article.updatedAt, image: [`${siteUrl}${article.hero.src}`], author: { "@type": "Organization", name: "ReachFlow", url: siteUrl }, publisher: { "@type": "Organization", name: "ReachFlow" }, mainEntityOfPage: `${siteUrl}/blog/${article.slug}` }, { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: `${siteUrl}/` }, { "@type": "ListItem", position: 2, name: "Blog", item: `${siteUrl}/blog` }, { "@type": "ListItem", position: 3, name: article.title, item: `${siteUrl}/blog/${article.slug}` }] }];
+  const previewImage = `${siteUrl}/blog/${article.slug}/opengraph-image`;
+  const graph: Record<string, unknown>[] = [{ "@type": "Article", "@id": `${siteUrl}/blog/${article.slug}#article`, headline: article.title, description: article.description, datePublished: article.publishedAt, dateModified: article.updatedAt, inLanguage: "en-US", image: [previewImage], author: { "@type": "Organization", name: "ReachFlow editorial team", url: `${siteUrl}/editorial-policy` }, publisher: { "@type": "Organization", name: "ReachFlow", url: siteUrl, logo: { "@type": "ImageObject", url: `${siteUrl}/icon.svg` } }, mainEntityOfPage: `${siteUrl}/blog/${article.slug}` }, { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: `${siteUrl}/` }, { "@type": "ListItem", position: 2, name: "Blog", item: `${siteUrl}/blog` }, { "@type": "ListItem", position: 3, name: article.title, item: `${siteUrl}/blog/${article.slug}` }] }];
   if (article.faq.length) graph.push({ "@type": "FAQPage", mainEntity: article.faq.map(item => ({ "@type": "Question", name: item.question, acceptedAnswer: { "@type": "Answer", text: item.answer } })) });
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@graph": graph }).replace(/</g, "\\u003c") }}/>;
 }

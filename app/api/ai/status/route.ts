@@ -1,2 +1,2 @@
-import { aiStatus } from '@/lib/ai-adapter'; import { identity, response, route } from '@/lib/server';
-export const GET = route(async () => { await identity(); return response(aiStatus()); });
+import { aiStatus } from '@/lib/ai-adapter'; import { readByokMetadata } from '@/lib/byok'; import { identity, response, route } from '@/lib/server';
+export const GET = route(async () => { const { user } = await identity(); const byok = await readByokMetadata(user.id); const managed = aiStatus(); return response({ enabled: !!byok || managed.enabled, mode: byok ? 'byok' : managed.mode, byok: !!byok, managed: managed.enabled }); });

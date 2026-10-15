@@ -131,6 +131,9 @@ verifies the session with the Auth service rather than trusting browser claims.
 - Private candidate profile, explainable job-fit analysis, tailored resume/cover-letter drafts,
   interview questions, and application tracking. Managed AI is optional; deterministic drafts are
   used when no AI server is configured.
+- Lead finder and lightweight CRM: customize niche, geography, business type, need, sources, and
+  contact preference; save public business records, score them deterministically, add notes, manage
+  statuses, and export tenant-owned leads. Apply `005_leads_crm.sql` before using saved leads.
 - Real Exa API adapter with jobs/clients/research query modes; no fabricated live results.
 - Agent-Reach-compatible hosted Exa MCP connector with keyless smoke-test mode and dedicated API-key mode.
 - Safe Supabase setup preview/apply helper that verifies schema and exact callback redirects.

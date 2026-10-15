@@ -78,6 +78,15 @@ export const applicationCreateSchema = z.object({ jobId: z.string().uuid(), note
 export const applicationPatchSchema = z.object({ status: z.enum(['draft','ready','submitted','withdrawn','rejected','interviewing','offer']).optional(), notes: z.string().trim().max(8000).optional() }).strict();
 export const generateSchema = z.object({ include: z.array(z.enum(['coverLetter','resume','interviewQuestions'])).max(3).optional() }).strict();
 export const byokSettingsSchema = z.object({ provider: z.literal('openai-compatible'), model: z.string().trim().min(1).max(200), baseUrl: z.string().trim().min(1).max(2048), apiKey: z.string().min(1).max(4096) }).strict();
+const leadText = (max: number) => z.string().trim().min(1).max(max);
+export const leadSearchSchema = z.object({
+  niche: leadText(160), location: leadText(160).optional(), country: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/).optional(), businessType: leadText(120).optional(), need: leadText(240).optional(),
+  sources: z.array(leadText(80)).max(8).optional(), contactPreference: z.enum(['any', 'email', 'phone', 'website']).optional(), limit: z.number().int().min(1).max(50).optional(),
+}).strict();
+export const leadStatusSchema = z.enum(['new', 'qualified', 'contacted', 'in_conversation', 'won', 'not_fit', 'snoozed']);
+export const leadPatchSchema = z.object({ status: leadStatusSchema.optional(), notes: z.string().trim().max(8000).optional() }).strict();
+export const leadNoteSchema = z.object({ body: leadText(4000) }).strict();
+export const leadListSchema = z.object({ status: leadStatusSchema.optional(), limit: z.coerce.number().int().min(1).max(100).default(50), offset: z.coerce.number().int().min(0).max(10000).default(0), format: z.enum(['json', 'csv']).default('json') }).strict();
 export function isAllowedByokUrl(value: string, env: Record<string, string | undefined> = process.env): boolean {
   try { const url = new URL(value); const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname.toLowerCase()); if (url.username || url.password || url.search || url.hash || (url.protocol !== 'https:' && !(local && url.protocol === 'http:'))) return false; if (local) return env.APP_ENV !== 'production'; if (!url.hostname.includes('.') || url.port && url.port !== '443') return false; const host = url.hostname.toLowerCase().replace(/\.$/, ''); if (host.endsWith('.local') || host.endsWith('.localhost') || host.endsWith('.internal') || host.endsWith('.home.arpa')) return false; if (/^(10\.|127\.|169\.254\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.)/.test(host) || /^\d+(?:\.\d+){3}$/.test(host)) return false; return true; } catch { return false; }
 }

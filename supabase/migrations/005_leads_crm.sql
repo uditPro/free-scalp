@@ -2,7 +2,7 @@ begin;
 create table if not exists public.leads (
   id uuid primary key default gen_random_uuid(), user_id uuid not null references public.profiles(id) on delete cascade,
   canonical_key text not null, business_name text not null, domain text not null, source_url text not null, description text not null,
-  location text, public_contacts jsonb not null default '{}'::jsonb check (jsonb_typeof(public_contacts) = 'object'), score integer not null default 0 check (score between 0 and 100),
+  location text, contact_name text, industry text, need_signal text, public_contacts jsonb not null default '{}'::jsonb check (jsonb_typeof(public_contacts) = 'object'), score integer not null default 0 check (score between 0 and 100),
   score_explanation jsonb not null default '{}'::jsonb, status text not null default 'new' check (status in ('new','qualified','contacted','in_conversation','won','not_fit','snoozed')),
   notes text not null default '', created_at timestamptz not null default now(), updated_at timestamptz not null default now(), unique(user_id, canonical_key)
 );

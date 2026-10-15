@@ -3,7 +3,7 @@ import type { SearchResult } from './validation';
 export const LEAD_STATUSES = ['new', 'qualified', 'contacted', 'in_conversation', 'won', 'not_fit', 'snoozed'] as const;
 export type LeadStatus = typeof LEAD_STATUSES[number];
 export type LeadSearchInput = { niche: string; location?: string; country?: string; businessType?: string; need?: string; sources?: string[]; contactPreference?: 'any' | 'email' | 'phone' | 'website'; limit?: number };
-export type LeadRecord = { businessName: string; domain: string; sourceUrl: string; description: string; location?: string; publicContacts: { emails?: string[]; phones?: string[]; website?: string } };
+export type LeadRecord = { businessName: string; domain: string; sourceUrl: string; description: string; location?: string; contactName?: string; industry?: string; needSignal?: string; publicContacts: { emails?: string[]; phones?: string[]; website?: string } };
 
 const clean = (value: string) => value.replace(/\s+/g, ' ').trim();
 const tokens = (value: string) => new Set((value.toLowerCase().match(/[a-z0-9][a-z0-9+#.-]{1,}/g) ?? []).filter(word => word.length > 2));
@@ -31,7 +31,10 @@ export function normalizeLeadResult(result: SearchResult): LeadRecord | null {
   const businessName = clean(result.title).replace(/\s*[|–—-]\s*(?:justdial|indiamart|linkedin|reddit|exa).*$/i, '').slice(0, 240) || domain;
   const description = clean(result.content ?? result.description).slice(0, 3000);
   const locationMatch = /\b(?:located|based|location|serving|in)\s*(?:in|at|:)?\s*([A-Z][A-Za-z .,'-]{2,80})/i.exec(description);
-  return { businessName, domain, sourceUrl: url.toString(), description, ...(locationMatch?.[1] ? { location: clean(locationMatch[1]).replace(/[.,]$/, '') } : {}), publicContacts: publicContacts(description, url.toString()) };
+  const contactMatch = /(?:contact|speak with|ask for)\s+([A-Z][A-Za-z.'-]{2,40}(?:\s+[A-Z][A-Za-z.'-]{2,40})?)/i.exec(description);
+  const industryMatch = /\b(?:specialist|provider|company|agency|firm|clinic|studio|store|shop)\s+(?:in|for)\s+([A-Za-z][A-Za-z &/-]{2,80})/i.exec(description);
+  const needMatch = /\b(?:looking for|need(?:s)?|seeking|request(?:s|ed)?|want(?:s)?|problem)\s+([^.!?]{8,180})/i.exec(description);
+  return { businessName, domain, sourceUrl: url.toString(), description, ...(locationMatch?.[1] ? { location: clean(locationMatch[1]).replace(/[.,]$/, '') } : {}), ...(contactMatch?.[1] ? { contactName: clean(contactMatch[1]).slice(0, 100) } : {}), ...(industryMatch?.[1] ? { industry: clean(industryMatch[1]).slice(0, 120) } : {}), ...(needMatch?.[1] ? { needSignal: clean(needMatch[1]).slice(0, 220) } : {}), publicContacts: publicContacts(description, url.toString()) };
 }
 
 export function scoreLead(lead: LeadRecord, input: LeadSearchInput) {

@@ -15,7 +15,7 @@ export const POST = route(async request => {
     const leads = normalizeLeads(found.results, input);
     const db = admin();
     if (leads.length) {
-      const { error } = await db.from('leads').upsert(leads.map(lead => ({ user_id: user.id, canonical_key: lead.canonicalKey, business_name: lead.businessName, domain: lead.domain, source_url: lead.sourceUrl, description: lead.description, location: lead.location ?? null, public_contacts: lead.publicContacts, score: lead.score, score_explanation: lead.explanation })), { onConflict: 'user_id,canonical_key', ignoreDuplicates: true });
+       const { error } = await db.from('leads').upsert(leads.map(lead => ({ user_id: user.id, canonical_key: lead.canonicalKey, business_name: lead.businessName, domain: lead.domain, source_url: lead.sourceUrl, description: lead.description, location: lead.location ?? null, contact_name: lead.contactName ?? null, industry: lead.industry ?? null, need_signal: lead.needSignal ?? null, public_contacts: lead.publicContacts, score: lead.score, score_explanation: lead.explanation })), { onConflict: 'user_id,canonical_key', ignoreDuplicates: true });
       if (error) throw new ApiError(503, 'The workspace database is not ready. Apply migration 005_leads_crm.sql.');
     }
     const keys = leads.map(lead => lead.canonicalKey);

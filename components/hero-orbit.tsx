@@ -3,8 +3,15 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-export default function HeroOrbit() {
+type HeroOrbitProps = { query?: string; active?: boolean };
+
+export default function HeroOrbit({ query = "", active = false }: HeroOrbitProps) {
   const mount = useRef<HTMLDivElement>(null);
+  const queryRef = useRef(query);
+  const activeRef = useRef(active);
+
+  useEffect(() => { queryRef.current = query; }, [query]);
+  useEffect(() => { activeRef.current = active; }, [active]);
 
   useEffect(() => {
     const host = mount.current;
@@ -17,20 +24,20 @@ export default function HeroOrbit() {
     host.appendChild(renderer.domElement);
     const world = new THREE.Group();
     scene.add(world);
-    const nodeMaterial = new THREE.MeshBasicMaterial({ color: 0x0b8062, transparent: true, opacity: 0.9 });
-    const glowMaterial = new THREE.MeshBasicMaterial({ color: 0xf2b84b, transparent: true, opacity: 0.85 });
+    const nodeMaterial = new THREE.MeshBasicMaterial({ color: 0x0b8062, transparent: true, opacity: 0.98 });
+    const glowMaterial = new THREE.MeshBasicMaterial({ color: 0xf2b84b, transparent: true, opacity: 0.98 });
     const points = [[-2.8, 0.9, 0.3], [-1.6, -0.65, 0.2], [-0.25, 0.25, 0.55], [1.25, 1.05, 0.1], [2.55, -0.15, 0.2], [1.45, -1.1, 0.5], [-0.7, -1.35, 0.1], [0.1, 1.65, -0.25]] as const;
     points.forEach(([x, y, z], index) => {
       const mesh = new THREE.Mesh(new THREE.SphereGeometry(index % 3 === 0 ? 0.1 : 0.06, 12, 12), index % 3 === 0 ? glowMaterial : nodeMaterial);
       mesh.position.set(x, y, z);
       world.add(mesh);
     });
-    const lineMaterial = new THREE.LineBasicMaterial({ color: 0x0b8062, transparent: true, opacity: 0.2 });
+     const lineMaterial = new THREE.LineBasicMaterial({ color: 0x0b8062, transparent: true, opacity: 0.42 });
     [[0, 2], [1, 2], [2, 3], [2, 5], [3, 4], [5, 6], [6, 1], [7, 2], [7, 3]].forEach(([from, to]) => {
       const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...points[from]), new THREE.Vector3(...points[to])]);
       world.add(new THREE.Line(geometry, lineMaterial));
     });
-    const flowMaterial = new THREE.MeshBasicMaterial({ color: 0xf2b84b, transparent: true, opacity: 0.95 });
+     const flowMaterial = new THREE.MeshBasicMaterial({ color: 0xf2b84b, transparent: true, opacity: 1 });
     const flows: THREE.CatmullRomCurve3[] = [];
     for (let index = 0; index < 7; index += 1) {
       const y = -1.9 + index * 0.63;
@@ -46,12 +53,13 @@ export default function HeroOrbit() {
       world.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(40)), lineMaterial));
     }
     const particles = flows.flatMap((curve, flowIndex) => Array.from({ length: 3 }, (_, particleIndex) => {
-      const particle = new THREE.Mesh(new THREE.SphereGeometry(0.035 + (particleIndex === 1 ? 0.02 : 0), 8, 8), flowMaterial);
-      particle.userData = { curve, offset: (particleIndex / 3 + flowIndex * 0.07) % 1 };
-      world.add(particle);
+       const particle = new THREE.Mesh(new THREE.SphereGeometry(0.035 + (particleIndex === 1 ? 0.02 : 0), 8, 8), flowMaterial);
+       particle.userData = { curve, offset: (particleIndex / 3 + flowIndex * 0.07) % 1 };
+       particle.position.copy(curve.getPointAt(particle.userData.offset));
+       world.add(particle);
       return particle;
     }));
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(2.35, 0.012, 8, 96), new THREE.MeshBasicMaterial({ color: 0x0b8062, transparent: true, opacity: 0.18 }));
+     const ring = new THREE.Mesh(new THREE.TorusGeometry(2.35, 0.018, 8, 96), new THREE.MeshBasicMaterial({ color: 0x0b8062, transparent: true, opacity: 0.32 }));
     ring.rotation.x = 0.9;
     world.add(ring);
     const resize = () => {
@@ -65,14 +73,20 @@ export default function HeroOrbit() {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let frame = 0;
     const animate = (time: number) => {
-      if (!reduced) {
-        world.rotation.y = time * 0.00008;
-        world.rotation.x = Math.sin(time * 0.00018) * 0.08;
+       if (!reduced) {
+         world.rotation.y = time * 0.00008;
+         world.rotation.x = Math.sin(time * 0.00018) * 0.08;
         particles.forEach((particle, index) => {
           const { curve, offset } = particle.userData as { curve: THREE.CatmullRomCurve3; offset: number };
-          particle.position.copy(curve.getPointAt((offset + time * (0.00004 + (index % 3) * 0.000015)) % 1));
-        });
-      }
+           particle.position.copy(curve.getPointAt((offset + time * (0.00004 + (index % 3) * 0.000015)) % 1));
+         });
+         const energy = activeRef.current || queryRef.current.length > 0 ? 1 : 0.55;
+         world.scale.setScalar(1 + Math.sin(time * 0.003) * 0.012 * energy);
+         world.children.slice(0, points.length).forEach((node, index) => {
+           const pulse = 1 + Math.sin(time * 0.0025 + index * 0.9) * 0.14 * energy;
+           node.scale.setScalar(pulse);
+         });
+       }
       renderer.render(scene, camera);
       frame = requestAnimationFrame(animate);
     };

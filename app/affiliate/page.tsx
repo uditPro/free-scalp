@@ -1,0 +1,10 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { ArrowUpRight, Check } from 'lucide-react';
+import { Header, Footer } from '@/components/brand';
+
+export const metadata: Metadata = { title: 'ReachFlow referrals', description: 'Share ReachFlow with people who may find it useful.', alternates: { canonical: '/affiliate' } };
+
+export default function AffiliatePage() {
+  return <><Header/><main id="main" className="affiliate-public"><section className="container affiliate-hero"><span className="eyebrow">SHARE WHAT HELPS</span><h1>Invite someone to<br/><em>look a little further.</em></h1><p>If ReachFlow helps you discover useful opportunities, you can share a personal link with people who might enjoy it too.</p><div className="affiliate-actions"><Link className="button" href="/signup">Create an account <ArrowUpRight size={17}/></Link><Link className="text-button" href="/login">Already have an account? Sign in</Link></div></section><section className="container affiliate-grid"><article><Check size={18}/><h2>Simple tracking</h2><p>Your link records visits and eligible signups so you can understand whether your sharing was useful.</p></article><article><Check size={18}/><h2>Clear boundaries</h2><p>This is an informational referral program. It does not promise commissions, payouts, credits, or other rewards.</p></article><article><Check size={18}/><h2>Respectful by design</h2><p>We do not store raw IP addresses. Referral attribution is limited to the link, click, and signup relationship.</p></article></section><section className="container affiliate-terms"><span className="eyebrow">HOW IT WORKS</span><h2>Honest terms, in plain language.</h2><ol><li>Sign in to your dashboard and open your referral page.</li><li>Share the opaque link with someone who chooses to visit it.</li><li>We may record a click and attribute one signup to that link when the person creates an account.</li></ol><p className="muted small">ReachFlow may change or pause referral tracking. Nothing on this page creates a payment obligation. Please only share with people who would reasonably welcome the invitation.</p></section></main><Footer/></>;
+}

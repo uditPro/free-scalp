@@ -18,7 +18,7 @@ Create `.env.local` using `.env.example` and supply your own service values priv
 
 ## Configure live services
 
-1. Create a Supabase project. Apply `supabase/migrations/001_initial.sql` once. If the first migration is already applied, also apply `supabase/migrations/002_paid_search_results_and_filters.sql` once; it expands paid result storage to 100 and adds the filtered-search audit fields.
+1. Create a Supabase project. Apply the migrations in `supabase/migrations/` in numeric order. The latest `006_affiliates.sql` adds the referral tables and service-role-only attribution functions.
 2. Configure email confirmation, SMTP and the allowed `/api/auth/callback` URL.
 3. Provide `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` for signup/login.
    `SUPABASE_SECRET_KEY` is server-only and required for search/billing, not authentication.

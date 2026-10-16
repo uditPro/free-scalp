@@ -124,7 +124,7 @@ export default function Workspace() {
          <button className={`sidebar-link ${view === "settings" ? "active" : ""}`} onClick={() => setView("settings")}><Settings2 size={18}/>Workspace settings</button>
       </nav>
       <div className="sidebar-upgrade"><Sparkles size={20}/><h3>Room for more.</h3><p>Free: 10 · Starter: 50 · Pro: 100 sources per search, when available.</p><Link href="/pricing">Explore plans <ArrowUpRight size={15}/></Link></div>
-      <div className="workspace-account"><span className="avatar">{email ? email[0].toUpperCase() : "?"}</span><div><strong>{email ?? "Your workspace"}</strong><small>{email ? `${plan || "Account"} plan` : "Sign in to get started"}</small></div>{email && <button className="icon-button" aria-label="Sign out" disabled={actionPending} onClick={logout}><LogOut size={16}/></button>}</div>
+      <div className="workspace-account"><Link href={email ? "/profile" : "/login"} className="workspace-account-profile" aria-label={email ? "Open your profile" : "Sign in"}><span className="avatar">{email ? email[0].toUpperCase() : "?"}</span><div><strong>{email ?? "Your workspace"}</strong><small>{email ? `${plan || "Account"} plan` : "Sign in to get started"}</small></div></Link>{email && <button className="icon-button" aria-label="Sign out" disabled={actionPending} onClick={logout}><LogOut size={16}/></button>}</div>
     </aside>
     <div className="workspace-main">
       <header className="workspace-topbar"><span>Workspace <strong>{view === "history" ? "Search history" : view === "settings" ? "Settings" : kinds.find(k => k.value === kind)?.title}</strong></span><Link href="/">Back to website <ArrowUpRight size={14}/></Link></header>

@@ -33,3 +33,22 @@ test('lead schemas bound input and status values', () => {
   assert.equal(leadPatchSchema.safeParse({ status: 'qualified' }).success, true);
   assert.equal(leadPatchSchema.safeParse({ status: 'invalid' }).success, false);
 });
+
+test('lead extraction rejects generic marketplace and keeps concise evidence', () => {
+  const results = normalizeLeads([
+    { id: 'junk', title: 'Top 5 sites to hire freelancers', url: 'https://example.com/freelancers', description: 'A generic marketplace list of sites to hire freelancers.', source: 'example' },
+    { id: 'good', title: 'Elemech Engineering | Contact', url: 'https://elemech.example/contact', description: 'Elemech Engineering is a manufacturer and supplier based in Pune. Contact us at sales@elemech.example or +91 98765 43210. We need a new website.', source: 'example' },
+  ], { niche: 'engineering', location: 'Pune', need: 'new website' });
+  const good = results.find(result => result.sourceDomain === 'elemech.example');
+  assert.equal(results.some(result => /freelancers/i.test(result.sourceTitle ?? '')), false);
+  assert.ok(good);
+  if (!good) return;
+  assert.equal(good.businessName, 'Elemech Engineering');
+  assert.equal(good.sourceDomain, 'elemech.example');
+  assert.equal(good.publicContacts.emails?.[0], 'sales@elemech.example');
+  assert.equal(good.publicContacts.phones?.[0], '+91 9876543210');
+  assert.ok(good.qualityScore! >= 50);
+  assert.ok(good.description.length <= 600);
+  assert.ok(good.evidence!.location);
+  assert.ok(good.confidence!.contacts > 0);
+});

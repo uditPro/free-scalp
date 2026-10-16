@@ -1,5 +1,9 @@
 export const affiliateCodePattern = /^[A-Za-z0-9_-]{12,64}$/;
 
+export function referralCookieValue(header: string | null | undefined): string | undefined {
+  return header?.split(';').map(part => part.trim()).find(part => part.startsWith('reachflow_referral='))?.slice('reachflow_referral='.length);
+}
+
 export function parseReferralCookie(value: string | undefined): { code: string; clickId?: string } | undefined {
   if (!value) return undefined;
   try {

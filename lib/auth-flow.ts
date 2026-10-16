@@ -64,7 +64,11 @@ export async function performAuth(input: z.infer<typeof authSchema>, auth: Auth,
       const { data, error } = await auth.signUp({ email: input.email, password: input.password, options: { emailRedirectTo: callback } });
       if (error) throw publicAuthError(error, 'Unable to create an account. Try signing in or resetting your password if you already have an account.');
       // Supabase returns a session immediately when email confirmation is off.
-      return { ok: true, authenticated: !!data.session, requiresEmailConfirmation: !data.session, userId: data.user?.id, message: data.session ? 'Your account is ready.' : 'Check your email to confirm your account.' };
+      // When email enumeration protection is enabled, an existing address can
+      // return a user with no identities. Do not attribute that existing user.
+      const userId = data.user?.id;
+      const isNewUser = !!userId && (data.user?.identities?.length ?? 0) > 0;
+      return { ok: true, authenticated: !!data.session, requiresEmailConfirmation: !data.session, ...(isNewUser ? { userId } : {}), message: data.session ? 'Your account is ready.' : 'Check your email to confirm your account.' };
     }
   }
 }

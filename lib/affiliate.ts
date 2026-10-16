@@ -18,6 +18,11 @@ export async function ensureAffiliateCode(userId: string) {
     const created = await db.from('affiliate_codes').insert({ user_id: userId, code: newCode() }).select('code, active').single();
     if (!created.error && created.data) return created.data;
     if (created.error?.code !== '23505') break;
+    // Another request may have created this user's row between the initial
+    // read and insert. Re-read before treating the conflict as a failure.
+    const afterConflict = await db.from('affiliate_codes').select('code, active').eq('user_id', userId).maybeSingle();
+    if (afterConflict.error) throw new ApiError(503, 'Affiliate setup is not available until the database migration is applied.');
+    if (afterConflict.data) return afterConflict.data;
   }
   throw new ApiError(503, 'Your referral link could not be created. Please try again.');
 }
@@ -40,5 +45,6 @@ export async function affiliateDashboard(userId: string) {
     db.from('affiliate_clicks').select('id', { count: 'exact', head: true }).eq('affiliate_code_id', codeRow.data.id),
     db.from('affiliate_attributions').select('id', { count: 'exact', head: true }).eq('affiliate_code_id', codeRow.data.id),
   ]);
+  if (clicks.error || attributions.error) throw new ApiError(503, 'Affiliate setup is not available until the database migration is applied.');
   return { code: code.code, active: code.active, clicks: clicks.count ?? 0, signups: attributions.count ?? 0 };
 }

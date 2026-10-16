@@ -101,6 +101,12 @@ test('signup returns confirmation-required state without exposing Supabase user 
   assert.equal('user' in result, false); assert.equal('session' in result, false);
 });
 
+test('signup does not expose an existing anti-enumeration user for attribution', async () => {
+  const auth = mockAuth({ signUp: async () => ({ data: { user: { id: 'existing-id', identities: [] }, session: null }, error: null }) });
+  const result = await performAuth(signup, auth, callback);
+  assert.equal('userId' in result, false);
+});
+
 test('signup with email auto-confirm enabled opens an authenticated workspace', async () => {
   const auth = mockAuth({ signUp: async () => ({ data: { session: { access_token: 'test-only-token' } }, error: null }) });
   const result = await performAuth(signup, auth, callback);

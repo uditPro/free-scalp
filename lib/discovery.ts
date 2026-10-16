@@ -115,7 +115,7 @@ export async function discover(query: string, kind: Kind, env: Environment = pro
   const advanced = options.detailed || options.limit > 10 || Object.keys(options.filters).length > 0;
   const filters = providerFilters(options.filters);
   const finish = (rows: SearchResult[]) => {
-    const results = sortResults(filterResults(rows, options.filters)).slice(0, options.limit).map((result, index) => ({ ...result, id: String(index + 1) }));
+     const results = sortResults(filterResults(rows, options.filters)).slice(0, options.limit).map((result, index) => ({ ...result, id: String(index + 1) }));
     const warnings: string[] = ['Results are public indexed pages, not authenticated social-media scraping. Availability and completeness vary by source.'];
     warnings.push('Results are sorted newest-first by publication metadata, with unknown dates last. Publication metadata does not prove a page is current or a listing is still open.');
     if (results.length < options.limit) warnings.push(`Requested up to ${options.limit}; ${results.length} unique matching sources returned. No additional matches are invented.`);
@@ -138,7 +138,7 @@ export async function discover(query: string, kind: Kind, env: Environment = pro
     const upstream = await fetch('https://api.exa.ai/search', {
       method: 'POST', redirect: 'error',
       headers: { 'x-api-key': env.EXA_API_KEY!.trim(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: input.query, type: 'auto', numResults: options.limit, ...filters, contents: { text: { maxCharacters: options.detailed ? 6000 : 1200 } } }),
+       body: JSON.stringify({ query: input.query, type: 'auto', numResults: options.limit, ...filters, contents: { text: { maxCharacters: options.detailed ? 12000 : 1200 } } }),
       signal: AbortSignal.timeout(25_000), cache: 'no-store',
     });
     if (upstream.status === 429) throw new DiscoveryError(429, 'The Exa search limit was reached. Please try again later.');
@@ -156,7 +156,7 @@ export async function discover(query: string, kind: Kind, env: Environment = pro
   try {
     await client.connect(transport);
     const response = await client.callTool(advanced
-      ? { name: 'web_search_advanced_exa', arguments: { query: input.query, type: 'auto', numResults: options.limit, ...filters, textMaxCharacters: options.detailed ? 6000 : 1200, enableHighlights: false } }
+       ? { name: 'web_search_advanced_exa', arguments: { query: input.query, type: 'auto', numResults: options.limit, ...filters, textMaxCharacters: options.detailed ? 12000 : 1200, enableHighlights: false } }
       : { name: 'web_search_exa', arguments: { ...input, numResults: options.limit } }, undefined, { timeout: 40_000 });
     const combined = finish(merge(parseMcpResults(response, options)));
     return { ...combined, warnings: [...workerWarnings, ...combined.warnings, ...(workerResults.length ? ['Local Agent-Reach worker results were included from tools explicitly installed and authorized on this Windows machine.'] : [])] };

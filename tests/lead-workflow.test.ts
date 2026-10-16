@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { canonicalLeadKey, leadSearchQuery, normalizeLeads, scoreLead } from '../lib/lead-workflow';
+import { canonicalLeadKey, leadSearchQuery, leadsCsv, normalizeLeads, scoreLead } from '../lib/lead-workflow';
 import { leadPatchSchema, leadSearchSchema } from '../lib/validation';
 
 test('lead search query keeps source labels in Exa query without direct fetching', () => {
@@ -11,7 +11,7 @@ test('lead search query keeps source labels in Exa query without direct fetching
 
 test('lead normalization is public-business-only and deduplicates canonical keys', () => {
   const results = normalizeLeads([
-    { id: '1', title: 'Acme Web Design | Justdial', url: 'https://www.acme.example/contact', description: 'Acme Web Design in Mumbai. Public contact hello@acme.example +91 98765 43210.', source: 'example' },
+    { id: '1', title: 'Acme Web Design | Justdial', url: 'https://www.acme.example/contact', description: 'Acme Web Design is a web design agency in Mumbai. We need web design support. Public contact hello@acme.example +91 98765 43210.', source: 'example' },
     { id: '2', title: 'Acme Web Design', url: 'https://acme.example/about', description: 'A duplicate business page.', source: 'example' },
   ], { niche: 'web design', location: 'Mumbai' });
   assert.equal(results.length, 1);
@@ -51,4 +51,21 @@ test('lead extraction rejects generic marketplace and keeps concise evidence', (
   assert.ok(good.description.length <= 600);
   assert.ok(good.evidence!.location);
   assert.ok(good.confidence!.contacts > 0);
+});
+
+test('lead extraction rejects editorial, tender, directory, and date-like phone values', () => {
+  const results = normalizeLeads([
+    { id: 'article', title: 'Best websites to hire independent contractors in 2026', url: 'https://example.com/blog/hiring', description: 'A guide for businesses looking for independent contractors.', source: 'example' },
+    { id: 'tender', title: 'Tender for electrical cable laying RefID: 149924788', url: 'https://tenders.example/tender/149924788', description: 'Tenders are invited for electrical work. Contact 04-06-2025.', source: 'example' },
+    { id: 'directory', title: 'Licensed Electrical Contractors Manufacturers Directory', url: 'https://directory.example/listing', description: 'Search results and all listings for electrical suppliers.', source: 'example' },
+  ], { niche: 'electrical', location: 'Ahmedabad', need: 'website' });
+  assert.equal(results.length, 0);
+});
+
+test('lead CSV includes complete fields and safely serializes structured values', () => {
+  const csv = leadsCsv([{ id: '1', business_name: '=bad', public_contacts: { emails: ['a@example.com'], phones: ['+91 9876543210'] }, evidence: { needSignal: 'We need a website' }, quality_score: 88, status: 'new' }]);
+  assert.match(csv, /email_addresses/);
+  assert.match(csv, /a@example\.com/);
+  assert.match(csv, /\"'=bad\"/);
+  assert.match(csv, /needSignal/);
 });

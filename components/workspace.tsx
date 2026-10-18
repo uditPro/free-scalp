@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, ArrowUpRight, BriefcaseBusiness, ClipboardList, CreditCard, FlaskConical, History, LoaderCircle, LogOut, Search, Settings2, Sparkles, UserRound, Users, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BriefcaseBusiness, ClipboardList, CreditCard, FlaskConical, History, Home, LoaderCircle, LogOut, Search, Settings2, Sparkles, UserRound, Users, X } from "lucide-react";
 import { Brand } from "./brand";
 import { api, safeExternalUrl } from "./api-client";
 import SearchControls from "./search-controls";
@@ -119,7 +119,7 @@ export default function Workspace() {
         {kinds.map(({ value, title, icon: Icon }) => <button key={value} disabled={searching} className={`sidebar-link ${view === "search" && kind === value ? "active" : ""}`} onClick={() => chooseKind(value)}><Icon size={18}/>{title}</button>)}
         <span className="sidebar-divider"/>
          <button className={`sidebar-link ${view === "history" ? "active" : ""}`} onClick={() => setView("history")}><History size={18}/>Search history</button>
-          <Link className="sidebar-link" href="/applications"><ClipboardList size={18}/>Applications</Link><Link className="sidebar-link" href="/leads"><Users size={18}/>Lead finder</Link><Link className="sidebar-link" href="/dashboard/affiliate"><Users size={18}/>Referrals</Link>
+          <Link className="sidebar-link" href="/homes"><Home size={18}/>Ahmedabad homes</Link><Link className="sidebar-link" href="/applications"><ClipboardList size={18}/>Applications</Link><Link className="sidebar-link" href="/leads"><Users size={18}/>Lead finder</Link><Link className="sidebar-link" href="/dashboard/affiliate"><Users size={18}/>Referrals</Link>
          <Link className="sidebar-link" href="/profile"><UserRound size={18}/>Your profile</Link>
          <button className={`sidebar-link ${view === "settings" ? "active" : ""}`} onClick={() => setView("settings")}><Settings2 size={18}/>Workspace settings</button>
       </nav>

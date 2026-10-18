@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { canonicalLeadKey, leadSearchQuery, leadsCsv, normalizeLeads, scoreLead } from '../lib/lead-workflow';
+import { canonicalLeadKey, corroborateLeadResults, leadSearchQuery, leadsCsv, normalizeLeads, scoreLead } from '../lib/lead-workflow';
 import { leadPatchSchema, leadSearchSchema } from '../lib/validation';
 
 test('lead search query keeps source labels in Exa query without direct fetching', () => {
@@ -68,4 +68,15 @@ test('lead CSV includes complete fields and safely serializes structured values'
   assert.match(csv, /a@example\.com/);
   assert.match(csv, /\"'=bad\"/);
   assert.match(csv, /needSignal/);
+  assert.match(csv, /provenance/);
+});
+
+test('entity resolution merges corroborated public sources and preserves provenance', () => {
+  const primary = [{ id: '1', title: 'Acme Web Design', url: 'https://acme.example/contact', description: 'Acme Web Design is an agency based in Mumbai. We need a new website.', source: 'example', provider: 'exa-api' as const }];
+  const places = [{ id: 'p1', title: 'Acme Web Design', url: 'https://maps.google.com/?cid=1', description: 'Mumbai · web design agency', content: 'Acme Web Design. Mumbai. +91 98765 43210.', source: 'google-places', provider: 'google-places' as const }];
+  const leads = normalizeLeads(corroborateLeadResults(primary, places), { niche: 'web design', location: 'Mumbai', need: 'new website' });
+  assert.equal(leads.length, 1);
+  assert.equal(leads[0].provenance?.length, 2);
+  assert.equal(leads[0].provenance?.[1].role, 'corroboration');
+  assert.equal(leads[0].evidence?.corroboratingSource, undefined);
 });

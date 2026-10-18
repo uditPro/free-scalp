@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { brokerRequestSchema, housingPreferencesSchema } from '../lib/validation';
+import { matchHousing } from '../lib/housing-matching';
+
+const base = { city: 'Ahmedabad' as const, areas: ['Bodakdev'], maxRent: 30000, bedrooms: 2, propertyTypes: ['apartment' as const], furnished: 'any' as const, needs: [] as string[], consentToBrokerContact: false };
+const listing = { id: 'a', city: 'Ahmedabad', area: 'Bodakdev', rent: 25000, bedrooms: 2, property_type: 'apartment', furnished: 'furnished', amenities: [], source_url: 'https://example.com/a', source_name: 'public web', last_seen_at: '2026-10-17T00:00:00Z' };
+const fresh = matchHousing(base, [listing], new Date('2026-10-18T00:00:00Z'))[0];
+assert.ok(fresh.score > 0); assert.deepEqual(fresh.labels, ['source-only']); assert.match(fresh.reasons.join(' '), /Public-web source/);
+assert.equal(matchHousing({ ...base, maxRent: 1000 }, [listing]).length, 0);
+const stale = matchHousing(base, [{ ...listing, id: 'b', last_seen_at: '2026-09-01T00:00:00Z' }], new Date('2026-10-18T00:00:00Z'))[0];
+assert.deepEqual(stale.labels, ['source-only', 'stale']);
+assert.equal(housingPreferencesSchema.safeParse({ ...base, unknown: true }).success, false);
+assert.equal(brokerRequestSchema.safeParse({ brokerId: '00000000-0000-0000-0000-000000000001', message: 'Call me', consent: false }).success, false);
+assert.equal(brokerRequestSchema.safeParse({ brokerId: '00000000-0000-0000-0000-000000000001', message: 'Call me', consent: true, extra: 1 }).success, false);
+const migration = readFileSync(resolve(process.cwd(), 'supabase/migrations/008_housing.sql'), 'utf8');
+assert.match(migration, /housing_preferences_own[\s\S]*auth\.uid\(\)\) = user_id/);
+assert.match(migration, /housing_saved_own[\s\S]*auth\.uid\(\)\) = user_id/);
+assert.match(migration, /broker_requests_own[\s\S]*auth\.uid\(\)\) = user_id/);
+console.log('Housing matching boundaries, provenance labels, strict fields, and consent tests passed.');

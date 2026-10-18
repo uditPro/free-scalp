@@ -36,7 +36,7 @@ export async function proxy(request: NextRequest) {
   }
   const path = request.nextUrl.pathname;
   const authPage = path === "/login" || path === "/signup";
-  const privatePage = path === "/profile" || path.startsWith("/applications") || path.startsWith("/dashboard");
+  const privatePage = path === "/profile" || path.startsWith("/applications") || path.startsWith("/dashboard") || path.startsWith("/match");
   if (user && authPage) return copyCookies(response, NextResponse.redirect(new URL("/dashboard", request.url)));
   if (!user && privatePage) {
     const destination = `${path}${request.nextUrl.search}`;

@@ -28,7 +28,7 @@ export function safeUrl(value: unknown): string | null {
     return url.toString();
   } catch { return null; }
 }
-export type SearchResult = { id: string; title: string; url: string; description: string; source: string; publishedAt?: string; author?: string; content?: string };
+export type SearchResult = { id: string; title: string; url: string; description: string; source: string; publishedAt?: string; author?: string; content?: string; provider?: string; corroboration?: { url: string; provider: string; text: string }[] };
 export function sortResults(results: SearchResult[]): SearchResult[] {
   return results
     .map((result, index) => ({ result, index, time: result.publishedAt ? Date.parse(result.publishedAt) : NaN }))
@@ -87,6 +87,15 @@ export const leadStatusSchema = z.enum(['new', 'qualified', 'contacted', 'in_con
 export const leadPatchSchema = z.object({ status: leadStatusSchema.optional(), notes: z.string().trim().max(8000).optional() }).strict();
 export const leadNoteSchema = z.object({ body: leadText(4000) }).strict();
 export const leadListSchema = z.object({ status: leadStatusSchema.optional(), limit: z.coerce.number().int().min(1).max(100).default(50), offset: z.coerce.number().int().min(0).max(10000).default(0), format: z.enum(['json', 'csv']).default('json') }).strict();
+const housingText = (max: number) => z.string().trim().min(1).max(max);
+const housingAreas = z.array(housingText(120)).max(20);
+export const housingPreferencesSchema = z.object({
+  city: z.literal('Ahmedabad'), areas: housingAreas.optional(), minRent: z.number().int().min(0).max(1000000).optional(), maxRent: z.number().int().min(0).max(1000000).optional(),
+  bedrooms: z.number().int().min(0).max(10).optional(), propertyTypes: z.array(z.enum(['apartment', 'house', 'room', 'studio', 'pg'])).max(10).optional(), furnished: z.enum(['any', 'furnished', 'semi_furnished', 'unfurnished']).default('any'), moveInDate: z.string().date().optional(), needs: z.array(z.enum(['parking', 'pets', 'wifi', 'power_backup', 'security', 'balcony'])).max(10).default([]), consentToBrokerContact: z.boolean().default(false),
+}).strict().refine(value => value.maxRent === undefined || value.minRent === undefined || value.maxRent >= value.minRent, { message: 'maxRent must be at least minRent', path: ['maxRent'] });
+export const housingMatchSchema = z.object({ preferenceId: z.string().uuid().optional(), limit: z.number().int().min(1).max(50).default(20) }).strict();
+export const housingListingActionSchema = z.object({ action: z.enum(['save', 'dismiss']) }).strict();
+export const brokerRequestSchema = z.object({ listingId: z.string().uuid().optional(), brokerId: z.string().uuid(), message: housingText(2000), consent: z.literal(true) }).strict();
 export function isAllowedByokUrl(value: string, env: Record<string, string | undefined> = process.env): boolean {
   try { const url = new URL(value); const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname.toLowerCase()); if (url.username || url.password || url.search || url.hash || (url.protocol !== 'https:' && !(local && url.protocol === 'http:'))) return false; if (local) return env.APP_ENV !== 'production'; if (!url.hostname.includes('.') || url.port && url.port !== '443') return false; const host = url.hostname.toLowerCase().replace(/\.$/, ''); if (host.endsWith('.local') || host.endsWith('.localhost') || host.endsWith('.internal') || host.endsWith('.home.arpa')) return false; if (/^(10\.|127\.|169\.254\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.)/.test(host) || /^\d+(?:\.\d+){3}$/.test(host)) return false; return true; } catch { return false; }
 }

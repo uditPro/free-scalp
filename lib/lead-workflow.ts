@@ -3,13 +3,28 @@ import type { SearchResult } from './validation';
 export const LEAD_STATUSES = ['new', 'qualified', 'contacted', 'in_conversation', 'won', 'not_fit', 'snoozed'] as const;
 export type LeadStatus = typeof LEAD_STATUSES[number];
 export type LeadSearchInput = { niche: string; location?: string; country?: string; businessType?: string; need?: string; sources?: string[]; contactPreference?: 'any' | 'email' | 'phone' | 'website'; limit?: number };
-export type LeadEvidence = { businessName?: string; location?: string; contactName?: string; industry?: string; needSignal?: string; emails?: string; phones?: string };
+export type LeadEvidence = { businessName?: string; location?: string; contactName?: string; industry?: string; needSignal?: string; emails?: string; phones?: string; corroboratingSource?: string };
 export type LeadConfidence = { businessName: number; identity: number; location: number; contactName: number; industry: number; needSignal: number; contacts: number };
-export type LeadRecord = { businessName: string; domain: string; sourceUrl: string; sourceTitle?: string; sourceDomain?: string; description: string; location?: string; contactName?: string; industry?: string; needSignal?: string; publicContacts: { emails?: string[]; phones?: string[]; website?: string }; evidence?: LeadEvidence; confidence?: LeadConfidence; qualityScore?: number };
+export type LeadProvenance = { url: string; domain: string; provider: string; role: 'discovery' | 'corroboration'; observedAt: string };
+export type LeadRecord = { businessName: string; domain: string; sourceUrl: string; sourceTitle?: string; sourceDomain?: string; description: string; location?: string; contactName?: string; industry?: string; needSignal?: string; publicContacts: { emails?: string[]; phones?: string[]; website?: string }; evidence?: LeadEvidence; confidence?: LeadConfidence; qualityScore?: number; provenance?: LeadProvenance[] };
 
 const clean = (value: string) => value.replace(/\s+/g, ' ').trim();
 const tokens = (value: string) => new Set((value.toLowerCase().match(/[a-z0-9][a-z0-9+#.-]{1,}/g) ?? []).filter(word => word.length > 2));
 const overlap = (a: string, b: string) => { const left = tokens(a); const right = tokens(b); return left.size ? [...left].filter(word => right.has(word)).length / left.size : 0; };
+
+/** Attach official provider observations to a public-web candidate without
+ * treating the provider as proof of buyer intent. */
+export function corroborateLeadResults(primary: SearchResult[], observations: SearchResult[]) {
+  return primary.map(result => {
+    const matches = observations.filter(observation => {
+      const nameMatch = overlap(result.title, observation.title) >= 0.5;
+      const locationMatch = !!result.description && !!observation.description && overlap(result.description, observation.description) >= 0.2;
+      return nameMatch || locationMatch;
+    }).slice(0, 3);
+    if (!matches.length) return result;
+    return { ...result, content: `${result.content ?? result.description}\nPublic provider corroboration: ${matches.map(item => `${item.title}. ${item.description}`).join(' ')}`, corroboration: matches.map(item => ({ url: item.url, provider: item.provider ?? item.source, text: item.content ?? item.description })) };
+  });
+}
 
 export function leadSearchQuery(input: LeadSearchInput) {
   const parts = [input.niche, input.businessType, input.need, input.location, input.country].filter(Boolean);
@@ -56,7 +71,14 @@ function conciseSummary(text: string, businessName: string) {
   return cleanField(useful ?? `${businessName} public business record.`, 600);
 }
 
-export function canonicalLeadKey(lead: LeadRecord) { return `${lead.domain.toLowerCase()}::${clean(lead.businessName).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`.slice(0, 500); }
+const entityName = (value: string) => clean(value).toLowerCase().replace(/&/g, ' and ').replace(/\b(?:incorporated|inc|llc|ltd|limited|pvt|private|company|co)\b/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+const entityLocation = (value?: string) => value ? clean(value).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().split(/\s+/).slice(0, 5).join('-') : '';
+export function canonicalLeadKey(lead: LeadRecord) {
+  // A name+location key resolves an Exa page and a Places record to one
+  // business, while domain+name remains the conservative fallback.
+  const identity = entityLocation(lead.location) ? `${entityName(lead.businessName)}::${entityLocation(lead.location)}` : `${lead.domain.toLowerCase()}::${entityName(lead.businessName)}`;
+  return identity.slice(0, 500);
+}
 
 export function normalizeLeadResult(result: SearchResult): LeadRecord | null {
   let url: URL; try { url = new URL(result.url); } catch { return null; }
@@ -79,10 +101,13 @@ export function normalizeLeadResult(result: SearchResult): LeadRecord | null {
   const location = locationMatch?.[1] ? cleanField(locationMatch[1], 120) : undefined;
   const industry = industryMatch?.[1] ? cleanField(industryMatch[1], 120) : undefined;
   const needSignal = usableNeed;
+  const provider = result.provider ?? (result.source === 'google-places' ? 'google-places' : 'public-web');
   const evidence: LeadEvidence = { businessName: cleanField(sourceTitle, 240), ...(location ? { location: evidenceSnippet(text, locationMatch) } : {}), ...(contactName ? { contactName: evidenceSnippet(text, contactMatch) } : {}), ...(industry ? { industry: evidenceSnippet(text, industryMatch) } : {}), ...(needSignal ? { needSignal: evidenceSnippet(text, needMatch) } : {}), ...(contacts.emails?.length ? { emails: contacts.emails.join(', ') } : {}), ...(contacts.phones?.length ? { phones: contacts.phones.join(', ') } : {}) };
   const confidence: LeadConfidence = { businessName: 0.9, identity: 0.9, location: location ? 0.9 : 0, contactName: contactName ? 0.85 : 0, industry: industry ? 0.8 : 0, needSignal: 0.9, contacts: contacts.emails?.length || contacts.phones?.length ? 0.95 : 0 };
   const qualityScore = Math.round(confidence.businessName * 20 + confidence.identity * 20 + confidence.contacts * 20 + confidence.location * 10 + confidence.industry * 10 + confidence.needSignal * 20);
-  return { businessName, domain, sourceUrl: url.toString(), sourceTitle, sourceDomain: domain, description: conciseSummary(text, businessName), ...(location ? { location } : {}), ...(contactName ? { contactName } : {}), ...(industry ? { industry } : {}), ...(needSignal ? { needSignal } : {}), publicContacts: contacts, evidence, confidence, qualityScore };
+  const corroboration = result.corroboration ?? [];
+  const provenance = [{ url: url.toString(), domain, provider, role: 'discovery' as const, observedAt: new Date().toISOString() }, ...corroboration.map(item => ({ url: item.url, domain: (() => { try { return new URL(item.url).hostname.toLowerCase().replace(/^www\./, ''); } catch { return 'unknown'; } })(), provider: item.provider, role: 'corroboration' as const, observedAt: new Date().toISOString() }))];
+  return { businessName, domain, sourceUrl: url.toString(), sourceTitle, sourceDomain: domain, description: conciseSummary(text, businessName), ...(location ? { location } : {}), ...(contactName ? { contactName } : {}), ...(industry ? { industry } : {}), ...(needSignal ? { needSignal } : {}), publicContacts: contacts, evidence, confidence, qualityScore, provenance };
 }
 
 export function scoreLead(lead: LeadRecord, input: LeadSearchInput) {
@@ -94,7 +119,16 @@ export function scoreLead(lead: LeadRecord, input: LeadSearchInput) {
 
 export function normalizeLeads(results: SearchResult[], input: LeadSearchInput) {
   const seen = new Set<string>();
-  return results.map(normalizeLeadResult).filter((lead): lead is LeadRecord => !!lead).filter(lead => { const key = canonicalLeadKey(lead); if (seen.has(key)) return false; seen.add(key); return true; }).map(lead => ({ ...lead, canonicalKey: canonicalLeadKey(lead), ...scoreLead(lead, input) }));
+  const merged = new Map<string, LeadRecord>();
+  for (const lead of results.map(normalizeLeadResult).filter((value): value is LeadRecord => !!value)) {
+    const key = canonicalLeadKey(lead);
+    const previous = merged.get(key);
+    if (!previous) { merged.set(key, lead); continue; }
+    const emails = [...new Set([...(previous.publicContacts.emails ?? []), ...(lead.publicContacts.emails ?? [])])].slice(0, 5);
+    const phones = [...new Set([...(previous.publicContacts.phones ?? []), ...(lead.publicContacts.phones ?? [])])].slice(0, 5);
+    merged.set(key, { ...previous, publicContacts: { ...previous.publicContacts, ...(emails.length ? { emails } : {}), ...(phones.length ? { phones } : {}) }, provenance: [...(previous.provenance ?? []), ...(lead.provenance ?? []).map(item => ({ ...item, role: 'corroboration' as const }))], evidence: { ...previous.evidence, corroboratingSource: lead.sourceUrl }, confidence: { ...previous.confidence!, contacts: Math.max(previous.confidence?.contacts ?? 0, lead.confidence?.contacts ?? 0) } });
+  }
+  return [...merged.values()].filter(lead => { const key = canonicalLeadKey(lead); if (seen.has(key)) return false; seen.add(key); return true; }).map(lead => ({ ...lead, canonicalKey: canonicalLeadKey(lead), ...scoreLead(lead, input) }));
 }
 
 const csvCell = (value: unknown) => {
@@ -103,7 +137,7 @@ const csvCell = (value: unknown) => {
   return `"${guarded.replaceAll('"', '""')}"`;
 };
 export function leadsCsv(leads: Array<Record<string, unknown>>) {
-  const columns = ['id', 'business_name', 'domain', 'source_url', 'source_title', 'source_domain', 'description', 'location', 'contact_name', 'industry', 'need_signal', 'email_addresses', 'phone_numbers', 'public_website', 'evidence', 'confidence', 'quality_score', 'score', 'score_explanation', 'status', 'notes', 'created_at', 'updated_at'];
+  const columns = ['id', 'business_name', 'domain', 'source_url', 'source_title', 'source_domain', 'description', 'location', 'contact_name', 'industry', 'need_signal', 'email_addresses', 'phone_numbers', 'public_website', 'evidence', 'confidence', 'provenance', 'quality_score', 'score', 'score_explanation', 'status', 'notes', 'created_at', 'updated_at'];
   const rows: Array<Record<string, unknown>> = leads.map(lead => ({ ...lead, email_addresses: Array.isArray((lead.public_contacts as { emails?: unknown[] } | undefined)?.emails) ? (lead.public_contacts as { emails: unknown[] }).emails.join('; ') : '', phone_numbers: Array.isArray((lead.public_contacts as { phones?: unknown[] } | undefined)?.phones) ? (lead.public_contacts as { phones: unknown[] }).phones.join('; ') : '', public_website: (lead.public_contacts as { website?: string } | undefined)?.website ?? '' }));
   return [columns.join(','), ...rows.map(lead => columns.map(column => csvCell(lead[column])).join(','))].join('\r\n');
 }

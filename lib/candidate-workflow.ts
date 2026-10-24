@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 class WorkflowError extends Error { constructor(public status: number, message: string) { super(message); } }
 
-export type CandidateProfile = { fullName?: string; headline?: string; location?: string; workAuthorization?: string; skills?: string[]; experience?: string; education?: string; preferences?: { titles?: string[]; locations?: string[]; remote?: boolean; employmentTypes?: string[] }; resume?: { text: string; fileName?: string } };
+export type CandidateProfile = { fullName?: string; headline?: string; summary?: string; targets?: string; location?: string; workAuthorization?: string; skills?: string[]; experience?: string; education?: string; preferences?: { titles?: string[]; locations?: string[]; remote?: boolean; employmentTypes?: string[] }; resume?: { text: string; fileName?: string } };
 const words = (value: string) => new Set((value.toLowerCase().match(/[a-z0-9+#.-]+/g) ?? []).filter(w => w.length > 2));
 export function profileCompletion(profile: CandidateProfile | null | undefined) {
   if (!profile) return { score: 0, missing: ['fullName','headline','skills','experience','resume'] };

@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict';
-import { authSchema, checkoutSchema, searchSchema, safeUrl, normalizeResults, quotaLimit, hasQuota } from '../lib/validation';
+import { authSchema, checkoutSchema, jobHuntPlanSchema, saveJobSchema, searchSchema, safeUrl, normalizeResults, quotaLimit, hasQuota } from '../lib/validation';
 import { parseMcpResults } from '../lib/discovery';
 
 assert.deepEqual(searchSchema.parse({ query: '  solar jobs  ', kind: 'jobs' }), { query: 'solar jobs', kind: 'jobs' });
 for (const value of [{ query: 'x', kind: 'jobs' }, { query: 'abc', kind: 'shell' }, { query: 'x'.repeat(501), kind: 'research' }, { query: 'abc', kind: 'clients', plan: 'pro' }]) assert.equal(searchSchema.safeParse(value).success, false);
 assert.equal(checkoutSchema.safeParse({ plan: 'enterprise' }).success, false);
+assert.equal(jobHuntPlanSchema.safeParse({ targetRole: 'Software Engineer', experienceLevel: 'mid', locations: 'Remote / United States', remote: true, startDate: '2026-10-23', targetApplications: 8, targetOutreach: 3, completedDays: [] }).success, true);
+assert.equal(jobHuntPlanSchema.safeParse({ targetRole: 'S', experienceLevel: 'mid', locations: 'Remote', remote: true, startDate: '2026-10-23', targetApplications: 8, targetOutreach: 3, completedDays: [] }).success, false);
+assert.equal(saveJobSchema.safeParse({ action: 'prepare', result: { title: 'Software Engineer', description: 'Build product features', url: 'https://example.com/jobs/1' } }).success, true);
+assert.equal(saveJobSchema.safeParse({ action: 'save', result: { title: 'Role', description: 'Details', url: 'javascript:bad' } }).success, false);
 assert.equal(authSchema.safeParse({ action: 'login', email: 'bad', password: 'short' }).success, false);
 assert.equal(authSchema.safeParse({ action: 'update-password', password: 'long-password' }).success, true);
 for (const url of ['http://example.com', 'javascript:alert(1)', 'https://user:pass@example.com', 'https://127.0.0.1', 'https://2130706433', 'https://[::1]', 'https://localhost', 'https://host.local', 'https://example.com:8080', null]) assert.equal(safeUrl(url), null);

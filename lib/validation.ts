@@ -64,8 +64,9 @@ export function normalizeResults(data: unknown, options: { limit?: number; detai
 
 const boundedText = (max: number) => z.string().trim().min(1).max(max);
 export const profileSchema = z.object({
-  fullName: z.string().trim().max(160).optional(), headline: z.string().trim().max(240).optional(),
+  fullName: z.string().trim().max(160).optional(), headline: z.string().trim().max(240).optional(), summary: z.string().trim().max(4000).optional(),
   location: z.string().trim().max(160).optional(), workAuthorization: z.string().trim().max(240).optional(),
+  targets: z.string().trim().max(4000).optional(),
   skills: z.array(boundedText(80)).max(100).optional(), experience: z.string().trim().max(12000).optional(),
   education: z.string().trim().max(4000).optional(), preferences: z.object({
     titles: z.array(boundedText(120)).max(30).optional(), locations: z.array(boundedText(120)).max(30).optional(),
@@ -73,10 +74,17 @@ export const profileSchema = z.object({
   }).strict().optional(), resume: z.object({ text: z.string().trim().max(30000), fileName: z.string().trim().max(200).optional() }).strict().optional(),
 }).strict();
 export const jobResultSchema = z.object({ title: boundedText(300), company: z.string().trim().max(240).optional(), location: z.string().trim().max(240).optional(), description: boundedText(30000), url: z.string().trim().max(2048).refine(value => !!safeUrl(value), 'Only safe HTTPS URLs are allowed').optional(), source: z.string().trim().max(120).optional() }).strict();
+export const saveJobSchema = z.object({ action: z.enum(['save', 'prepare']), result: jobResultSchema }).strict();
 export const jobPatchSchema = jobResultSchema.partial().extend({ status: z.enum(['saved','archived','applied']).optional() }).strict();
 export const applicationCreateSchema = z.object({ jobId: z.string().uuid(), notes: z.string().trim().max(8000).optional() }).strict();
 export const applicationPatchSchema = z.object({ status: z.enum(['draft','ready','submitted','withdrawn','rejected','interviewing','offer']).optional(), notes: z.string().trim().max(8000).optional() }).strict();
 export const generateSchema = z.object({ include: z.array(z.enum(['coverLetter','resume','interviewQuestions'])).max(3).optional() }).strict();
+export const jobHuntPlanSchema = z.object({
+  targetRole: z.string().trim().min(2).max(160), experienceLevel: z.enum(['entry', 'mid', 'senior', 'lead']),
+  locations: z.string().trim().min(2).max(240), remote: z.boolean(), startDate: z.string().date(),
+  targetApplications: z.number().int().min(1).max(50), targetOutreach: z.number().int().min(0).max(30),
+  completedDays: z.array(z.number().int().min(1).max(7)).max(7),
+}).strict();
 export const byokSettingsSchema = z.object({ provider: z.literal('openai-compatible'), model: z.string().trim().min(1).max(200), baseUrl: z.string().trim().min(1).max(2048), apiKey: z.string().min(1).max(4096) }).strict();
 const leadText = (max: number) => z.string().trim().min(1).max(max);
 export const leadSearchSchema = z.object({

@@ -131,6 +131,10 @@ verifies the session with the Auth service rather than trusting browser claims.
 - Private candidate profile, explainable job-fit analysis, tailored resume/cover-letter drafts,
   interview questions, and application tracking. Managed AI is optional; deterministic drafts are
   used when no AI server is configured.
+- Seven-day software-engineer job sprint at `/job-hunt`: set a target, save progress in the
+  tenant-owned candidate profile, and follow a daily discover → verify → prepare → apply →
+  follow-up loop. It reuses the existing search and application workflow; it does not promise a
+  job in seven days or submit applications/messages automatically.
 - Lead finder and lightweight CRM: customize niche, geography, business type, need, sources, and
   contact preference; save public business records, score them deterministically, add notes, manage
   statuses, and export tenant-owned leads. Apply `005_leads_crm.sql` before using saved leads.

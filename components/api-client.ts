@@ -1,5 +1,7 @@
-export async function api<T>(path: string, body?: unknown): Promise<T> {
-  const response = await fetch(path, { method: body === undefined ? "GET" : "POST", credentials: "same-origin", headers: body === undefined ? undefined : { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body), cache: "no-store" });
+type ApiOptions = { method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" };
+export async function api<T>(path: string, body?: unknown, options: ApiOptions = {}): Promise<T> {
+  const method = options.method ?? (body === undefined ? "GET" : "POST");
+  const response = await fetch(path, { method, credentials: "same-origin", headers: body === undefined ? undefined : { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body), cache: "no-store" });
   const data = await response.json().catch(() => null);
   if (!response.ok) throw new Error(data?.error || `The request could not be completed (${response.status}). Please try again.`);
   if (data === null) throw new Error("The server returned an unexpected response. Please try again.");

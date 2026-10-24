@@ -85,6 +85,31 @@ export const jobHuntPlanSchema = z.object({
   targetApplications: z.number().int().min(1).max(50), targetOutreach: z.number().int().min(0).max(30),
   completedDays: z.array(z.number().int().min(1).max(7)).max(7),
 }).strict();
+const verifiedWebsite = z.string().trim().max(2048).refine(value => !!safeUrl(value), 'Use a public HTTPS company website.');
+const salary = z.number().finite().min(0).max(100000000).nullable().optional();
+const employerJobFields = {
+  title: z.string().trim().min(3).max(180),
+  location: z.string().trim().min(2).max(180),
+  workplace_type: z.enum(['remote', 'hybrid', 'onsite']),
+  employment_type: z.enum(['full-time', 'part-time', 'contract', 'internship']),
+  experience_level: z.enum(['entry', 'mid', 'senior', 'lead']),
+  salary_min: salary,
+  salary_max: salary,
+  currency: z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/).default('USD'),
+  description: z.string().trim().min(40).max(20000),
+  requirements: z.string().trim().max(12000).default(''),
+};
+export const employerCompanySchema = z.object({ name: z.string().trim().min(2).max(160), websiteUrl: verifiedWebsite, description: z.string().trim().max(4000).default('') }).strict();
+export const employerJobSchema = z.object(employerJobFields).strict().refine(value => value.salary_min == null || value.salary_max == null || value.salary_max >= value.salary_min, { message: 'Salary maximum must be at least the salary minimum.', path: ['salary_max'] });
+export const employerJobPatchSchema = z.object({
+  title: employerJobFields.title.optional(), location: employerJobFields.location.optional(), workplace_type: employerJobFields.workplace_type.optional(),
+  employment_type: employerJobFields.employment_type.optional(), experience_level: employerJobFields.experience_level.optional(),
+  salary_min: salary, salary_max: salary, currency: employerJobFields.currency.optional(), description: employerJobFields.description.optional(),
+  requirements: employerJobFields.requirements.optional(), action: z.enum(['publish', 'close', 'reopen']).optional(),
+}).strict().refine(value => value.salary_min == null || value.salary_max == null || value.salary_max >= value.salary_min, { message: 'Salary maximum must be at least the salary minimum.', path: ['salary_max'] });
+export const employerApplicationPatchSchema = z.object({ status: z.enum(['submitted', 'reviewing', 'interview', 'rejected', 'hired', 'withdrawn']).optional(), employer_note: z.string().trim().max(8000).optional() }).strict();
+export const employerBoardQuerySchema = z.object({ query: z.string().trim().max(120).optional(), location: z.string().trim().max(120).optional(), limit: z.coerce.number().int().min(1).max(50).default(24) }).strict();
+export const jobBoardApplySchema = z.object({ coverNote: z.string().trim().max(4000).optional() }).strict();
 export const byokSettingsSchema = z.object({ provider: z.literal('openai-compatible'), model: z.string().trim().min(1).max(200), baseUrl: z.string().trim().min(1).max(2048), apiKey: z.string().min(1).max(4096) }).strict();
 const leadText = (max: number) => z.string().trim().min(1).max(max);
 export const leadSearchSchema = z.object({

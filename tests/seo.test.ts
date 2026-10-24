@@ -17,6 +17,7 @@ test("sitemap publishes only public canonical resources", () => {
   const urls = sitemap().map(entry => String(entry.url));
   assert.ok(urls.includes("http://localhost:3000/resources"));
   assert.ok(urls.includes("http://localhost:3000/editorial-policy"));
+  assert.ok(urls.includes("http://localhost:3000/jobs"));
   assert.ok(urls.every(url => !/\/(dashboard|profile|applications|login|signup|reset-password)(\/|$)/.test(url)));
   const article = urls.find(url => url.includes("/blog/") && !url.endsWith("/blog/"));
   assert.ok(article);

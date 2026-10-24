@@ -16,6 +16,11 @@ Inspired by Agent-Reach's upstream connector architecture; not a fork or a claim
 - GET /api/runs -> { runs: [{ id, query, kind, created_at, result_count }] }.
 - POST /api/billing/checkout { plan: 'starter'|'pro' } -> { url }.
 - POST /api/billing/portal -> { url }.
+- GET/PUT /api/employer/company -> employer profile and domain verification state.
+- GET/POST /api/employer/jobs and PATCH /api/employer/jobs/:id -> verified-company job management.
+- GET /api/job-board and GET/POST /api/job-board/:id(/apply) -> public job discovery and in-platform applications.
+- GET /api/employer/applications and PATCH /api/employer/applications/:id -> employer applicant review/status.
+- GET /api/job-applications -> candidate status for applications to employer-posted jobs.
 - Frontend must handle missing configuration and unauthenticated API responses gracefully.
 - Paid plan authorization and quotas enforced on the server, never by browser claims.
 - No recurring scheduler or arbitrary shell execution in this initial build.
@@ -23,4 +28,5 @@ Inspired by Agent-Reach's upstream connector architecture; not a fork or a claim
 ## Acceptance
 Attractive responsive marketing site, auth screens, searchable dashboard with genuine connector responses,
 explicit empty/error/setup states, pricing/checkout and billing portal wiring, tenant-isolated persistence,
-tested quota/validation boundaries, deployable build and honest setup documentation.
+verified-employer job posting and candidate application flow, tested quota/validation boundaries,
+deployable build and honest setup documentation.

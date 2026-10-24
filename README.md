@@ -18,7 +18,7 @@ Create `.env.local` using `.env.example` and supply your own service values priv
 
 ## Configure live services
 
-1. Create a Supabase project. Apply the migrations in `supabase/migrations/` in numeric order. `008_housing.sql` adds the rental matching tables and RLS policies; `009_housing_any_location.sql` expands the pilot from Ahmedabad to any city, metro, or town.
+1. Create a Supabase project. Apply the migrations in `supabase/migrations/` in numeric order. `008_housing.sql` adds the rental matching tables and RLS policies; `009_housing_any_location.sql` expands the pilot from Ahmedabad to any city, metro, or town; `010_employer_jobs.sql` adds verified-employer job posting and in-platform applications.
 2. Configure email confirmation, SMTP and the allowed `/api/auth/callback` URL.
 3. Provide `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` for signup/login.
    `SUPABASE_SECRET_KEY` is server-only and required for search/billing, not authentication.
@@ -136,6 +136,10 @@ verifies the session with the Auth service rather than trusting browser claims.
   tenant-owned candidate profile, and follow a daily discover → verify → prepare → apply →
   follow-up loop. It reuses the existing search and application workflow; it does not promise a
   job in seven days or submit applications/messages automatically.
+- Verified employer portal at `/employer` and public job board at `/jobs`: a signed-in employer
+  must use a non-consumer business email whose domain matches the company website before the
+  portal unlocks free job posting. Candidates can browse published roles, apply with their
+  ReachFlow profile/resume, and see employer status updates in `/applications`.
 - Lead finder and lightweight CRM: customize niche, geography, business type, need, sources, and
   contact preference; save public business records, score them deterministically, add notes, manage
   statuses, and export tenant-owned leads. Apply `005_leads_crm.sql` before using saved leads.
@@ -153,7 +157,10 @@ This is a launch foundation, not a verified production service. Live services ha
 without account configuration. Exa MCP/API is the implemented search connector: no LinkedIn login,
  social account cookies, arbitrary website extraction, recurring scheduling, email alerts, resume
  binary upload/parser, or background worker is included. Candidate workflow currently stores
- structured profile/resume text and uses deterministic generation unless managed AI is configured.
+structured profile/resume text and uses deterministic generation unless managed AI is configured.
+Employer verification is domain matching, not legal incorporation or recruiter identity
+accreditation; review company details and add moderation, rate limits, abuse reporting, and
+retention policies before opening the board broadly.
 Client discovery means relevant public search results, not verified leads or enriched contacts.
 Failed attempts consume quota; interrupted requests may remain pending and need reconciliation.
 Password recovery uses PKCE and should open in the initiating browser.
@@ -176,7 +183,7 @@ database concurrency, RLS, real email delivery, payment processing or browser in
 ## Deploy and release gate
 
 Deploy this directory to a Next.js-compatible Node host (for example Vercel), set environment variables,
-apply migrations 001, 002, and 003_candidate_workflow.sql, update redirect URLs, and register the production Stripe webhook.
+apply migrations 001 through 010 in order, update redirect URLs, and register the production Stripe webhook.
 Use `npm run build` and `npm start` for a Node deployment. No live deployment has been performed.
 
 After deployment, run `npm run check:seo` against the final public host. It checks the sitemap, robots,

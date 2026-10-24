@@ -29,8 +29,10 @@ const PUBLIC_PATHS = [
   "/",
   "/blog",
   "/pricing",
+  "/affiliate",
   "/resources",
   "/editorial-policy",
+  "/jobs",
   ...BLOG_SLUGS.map(slug => `/blog/${slug}`),
 ] as const;
 

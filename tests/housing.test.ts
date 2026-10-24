@@ -3,12 +3,14 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { brokerRequestSchema, housingPreferencesSchema } from '../lib/validation';
 import { matchHousing } from '../lib/housing-matching';
+import { parseHousingResult } from '../lib/housing-discovery';
 
 const base = { city: 'Ahmedabad' as const, areas: ['Bodakdev'], maxRent: 30000, bedrooms: 2, propertyTypes: ['apartment' as const], furnished: 'any' as const, needs: [] as string[], consentToBrokerContact: false };
 const listing = { id: 'a', city: 'Ahmedabad', area: 'Bodakdev', rent: 25000, bedrooms: 2, property_type: 'apartment', furnished: 'furnished', amenities: [], source_url: 'https://example.com/a', source_name: 'public web', last_seen_at: '2026-10-17T00:00:00Z' };
 const fresh = matchHousing(base, [listing], new Date('2026-10-18T00:00:00Z'))[0];
 assert.ok(fresh.score > 0); assert.deepEqual(fresh.labels, ['source-only']); assert.match(fresh.reasons.join(' '), /Public-web source/);
 assert.equal(matchHousing({ ...base, maxRent: 1000 }, [listing]).length, 0);
+assert.equal(matchHousing({ ...base, city: 'Austin', areas: ['Downtown'] }, [{ ...listing, city: 'Austin', area: 'Downtown' }]).length, 1);
 const stale = matchHousing(base, [{ ...listing, id: 'b', last_seen_at: '2026-09-01T00:00:00Z' }], new Date('2026-10-18T00:00:00Z'))[0];
 assert.deepEqual(stale.labels, ['source-only', 'stale']);
 assert.equal(housingPreferencesSchema.safeParse({ ...base, unknown: true }).success, false);
@@ -18,4 +20,9 @@ const migration = readFileSync(resolve(process.cwd(), 'supabase/migrations/008_h
 assert.match(migration, /housing_preferences_own[\s\S]*auth\.uid\(\)\) = user_id/);
 assert.match(migration, /housing_saved_own[\s\S]*auth\.uid\(\)\) = user_id/);
 assert.match(migration, /broker_requests_own[\s\S]*auth\.uid\(\)\) = user_id/);
+const locationMigration = readFileSync(resolve(process.cwd(), 'supabase/migrations/009_housing_any_location.sql'), 'utf8');
+assert.match(locationMigration, /housing_preferences_city_check/);
+const facebookListing = parseHousingResult({ title: '2 BHK for rent in Downtown', url: 'https://www.facebook.com/groups/example/posts/1', description: 'Public Facebook group rental post', source: 'facebook.com' }, 'Austin');
+assert.equal(facebookListing?.source_name, 'Facebook public page/group (indexed)');
+assert.equal(facebookListing?.city, 'Austin');
 console.log('Housing matching boundaries, provenance labels, strict fields, and consent tests passed.');

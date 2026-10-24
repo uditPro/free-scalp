@@ -19,6 +19,7 @@ export type RentalListing = {
 
 /** Frontend contract for the future listings API. Public-web data stays explicitly labelled. */
 export type RentalMatchRequest = {
+  location: string;
   locality: string;
   budget: number;
   bedrooms: string;

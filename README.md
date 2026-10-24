@@ -18,7 +18,7 @@ Create `.env.local` using `.env.example` and supply your own service values priv
 
 ## Configure live services
 
-1. Create a Supabase project. Apply the migrations in `supabase/migrations/` in numeric order. The latest `008_housing.sql` adds lead provenance plus the Ahmedabad rentals matching tables and RLS policies.
+1. Create a Supabase project. Apply the migrations in `supabase/migrations/` in numeric order. `008_housing.sql` adds the rental matching tables and RLS policies; `009_housing_any_location.sql` expands the pilot from Ahmedabad to any city, metro, or town.
 2. Configure email confirmation, SMTP and the allowed `/api/auth/callback` URL.
 3. Provide `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` for signup/login.
    `SUPABASE_SECRET_KEY` is server-only and required for search/billing, not authentication.
@@ -27,7 +27,8 @@ Create `.env.local` using `.env.example` and supply your own service values priv
    (`https://mcp.exa.ai/mcp`) when no `EXA_API_KEY` is configured. This is rate-limited
    and not a production SLA. For dedicated usage set `SEARCH_PROVIDER=exa-api` and
    provide an `EXA_API_KEY`; `SEARCH_PROVIDER=auto` chooses the dedicated API when the
-   key exists. Searches save only normalized source-linked results in Supabase.
+     key exists. Searches save only normalized source-linked results in Supabase.
+   Rental matching refreshes public indexed web sources and publicly indexed Facebook pages/groups for the requested location. Private or login-only groups are not scraped, and every result remains explicitly source-only until verified.
 5. Configure Stripe recurring Starter/Pro prices, customer portal and signed webhook endpoint.
 6. Set `APP_URL` to the exact canonical origin, including port locally; use HTTPS in production.
    Use the same host that Vercel does not redirect (for example, if Vercel redirects the apex

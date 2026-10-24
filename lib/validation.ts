@@ -98,7 +98,7 @@ export const leadListSchema = z.object({ status: leadStatusSchema.optional(), li
 const housingText = (max: number) => z.string().trim().min(1).max(max);
 const housingAreas = z.array(housingText(120)).max(20);
 export const housingPreferencesSchema = z.object({
-  city: z.literal('Ahmedabad'), areas: housingAreas.optional(), minRent: z.number().int().min(0).max(1000000).optional(), maxRent: z.number().int().min(0).max(1000000).optional(),
+  city: housingText(160), areas: housingAreas.optional(), minRent: z.number().int().min(0).max(1000000).optional(), maxRent: z.number().int().min(0).max(1000000).optional(),
   bedrooms: z.number().int().min(0).max(10).optional(), propertyTypes: z.array(z.enum(['apartment', 'house', 'room', 'studio', 'pg'])).max(10).optional(), furnished: z.enum(['any', 'furnished', 'semi_furnished', 'unfurnished']).default('any'), moveInDate: z.string().date().optional(), needs: z.array(z.enum(['parking', 'pets', 'wifi', 'power_backup', 'security', 'balcony'])).max(10).default([]), consentToBrokerContact: z.boolean().default(false),
 }).strict().refine(value => value.maxRent === undefined || value.minRent === undefined || value.maxRent >= value.minRent, { message: 'maxRent must be at least minRent', path: ['maxRent'] });
 export const housingMatchSchema = z.object({ preferenceId: z.string().uuid().optional(), limit: z.number().int().min(1).max(50).default(20) }).strict();

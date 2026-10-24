@@ -1,11 +1,11 @@
-export type HousingPreferences = { city: 'Ahmedabad'; areas?: string[]; minRent?: number; maxRent?: number; bedrooms?: number; propertyTypes?: string[]; furnished?: string; needs?: string[] };
+export type HousingPreferences = { city: string; areas?: string[]; minRent?: number; maxRent?: number; bedrooms?: number; propertyTypes?: string[]; furnished?: string; needs?: string[] };
 export type HousingListing = { id: string; city: string; area?: string | null; rent?: number | null; bedrooms?: number | null; property_type?: string | null; furnished?: string | null; amenities?: string[] | null; source_url: string; source_name: string; last_seen_at: string; source_only?: boolean; };
 export type HousingMatch = { listingId: string; score: number; reasons: string[]; labels: string[]; stale: boolean; sourceOnly: boolean };
 
 const norm = (value: string | null | undefined) => (value ?? '').trim().toLowerCase();
 export function matchHousing(preferences: HousingPreferences, listings: HousingListing[], now = new Date()): HousingMatch[] {
   return listings.filter(listing => {
-    if (norm(listing.city) !== 'ahmedabad') return false;
+    if (norm(listing.city) !== norm(preferences.city)) return false;
     if (listing.rent != null && preferences.minRent != null && listing.rent < preferences.minRent) return false;
     if (listing.rent != null && preferences.maxRent != null && listing.rent > preferences.maxRent) return false;
     if (listing.bedrooms != null && preferences.bedrooms != null && listing.bedrooms < preferences.bedrooms) return false;
@@ -14,7 +14,7 @@ export function matchHousing(preferences: HousingPreferences, listings: HousingL
   }).map(listing => {
     let score = 0; const reasons: string[] = [];
     const area = norm(listing.area); const wantedAreas = (preferences.areas ?? []).map(norm);
-    if (!wantedAreas.length || wantedAreas.some(wanted => area === wanted || area.includes(wanted) || wanted.includes(area))) { score += 25; reasons.push('Area matches your Ahmedabad preference'); }
+    if (!wantedAreas.length || wantedAreas.some(wanted => area === wanted || area.includes(wanted) || wanted.includes(area))) { score += 25; reasons.push(`Area matches your ${preferences.city} preference`); }
     if (preferences.maxRent === undefined || listing.rent == null || listing.rent <= preferences.maxRent) { score += 25; reasons.push('Rent is within your maximum'); }
     if (preferences.minRent === undefined || listing.rent == null || listing.rent >= preferences.minRent) score += 5;
     if (preferences.bedrooms === undefined || listing.bedrooms == null || listing.bedrooms >= preferences.bedrooms) { score += 20; reasons.push('Bedroom count meets your preference'); }

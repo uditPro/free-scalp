@@ -18,7 +18,7 @@ export default function SearchResults({ results, warnings, query }: { results: S
   }
   async function prepare(result: SearchResult, action: "save" | "prepare") {
     setPending(`${action}:${result.id}`); setFeedback("");
-    try { const data = await api<{ id?: string }>("/api/jobs/from-result", { action, result: { title: result.title, description: result.description || "No excerpt supplied; review the original source before saving.", url: result.url, source: result.source } }); if (action === "prepare" && data.id) window.location.assign(`/applications/${encodeURIComponent(data.id)}`); else setFeedback("Saved to your applications."); }
+    try { const data = await api<{ id?: string }>("/api/jobs/from-result", { action, result: { title: result.title, description: result.description || "No excerpt supplied; review the original source before saving.", content: result.content, publishedAt: result.publishedAt, author: result.author, provider: result.provider, url: result.url, source: result.source } }); if (action === "prepare" && data.id) window.location.assign(`/applications/${encodeURIComponent(data.id)}`); else setFeedback("Saved with source and freshness metadata."); }
     catch (err) { setFeedback(err instanceof Error ? err.message : "This role could not be saved."); }
     finally { setPending(null); }
   }

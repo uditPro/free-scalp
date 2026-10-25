@@ -8,7 +8,7 @@ function normalize(application: any, job: any) {
     id: application.id, status: application.status, notes: application.notes,
     created_at: application.created_at, updated_at: application.updated_at,
     title: job?.title, company: job?.company, url: job?.url, description: job?.description,
-    job, fit: job?.fit_analysis ?? undefined, draftMode: drafts.mode,
+    job, fit: job?.fit_analysis ?? undefined, draftMode: drafts.mode, draftReview: drafts.review,
     tailored_resume: drafts.resume, cover_letter: drafts.coverLetter, interview_prep: drafts.interviewQuestions,
   };
 }

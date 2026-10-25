@@ -13,12 +13,13 @@ type AppDetail = {
   status?: string;
   url?: string;
   description?: string;
-  job?: { title?: string; company?: string; url?: string; description?: string };
+  job?: { title?: string; company?: string; url?: string; description?: string; source?: string; source_type?: string; integrity_status?: string; fetched_at?: string; posted_at?: string };
   fit?: FitData;
   draftMode?: string;
   tailored_resume?: string;
   cover_letter?: string;
   interview_prep?: string[];
+  draftReview?: { status?: string; unsupportedClaims?: string[]; missingEvidence?: string[] };
 };
 
 const statuses = [
@@ -86,13 +87,14 @@ export default function ApplicationWorkspace({ id }: { id: string }) {
       <section className="career-card draft-card">
         <div className="draft-card-heading"><div><span className="eyebrow">EDIT BEFORE YOU SEND</span><h2>Your application drafts</h2></div><button className="button button-small" disabled={generating} onClick={generateDrafts}>{generating ? <LoaderCircle className="spin" size={15}/> : <Sparkles size={15}/>} {hasDrafts ? "Regenerate drafts" : "Generate drafts"}</button></div>
         <div className="draft-tabs" role="tablist" aria-label="Application drafts"><button className={tab === "resume" ? "active" : ""} onClick={() => setTab("resume")}><FileText size={16}/>Tailored resume</button><button className={tab === "letter" ? "active" : ""} onClick={() => setTab("letter")}><Mail size={16}/>Cover letter</button><button className={tab === "prep" ? "active" : ""} onClick={() => setTab("prep")}><ClipboardList size={16}/>Interview prep</button></div>
-        <div className="draft-label"><span>{item.draftMode ? `${item.draftMode.toUpperCase()} DRAFT` : "DRAFT NOT GENERATED"}</span><button className="text-button" disabled={!copy} onClick={() => navigator.clipboard?.writeText(copy || "")}><Save size={14}/>Copy text</button></div>
-        {copy ? <pre className="draft-content">{copy}</pre> : <div className="draft-empty">Save your profile, then generate editable drafts from the job details and your own experience.</div>}
+       <div className="draft-label"><span>{item.draftMode ? `${item.draftMode.toUpperCase()} DRAFT` : "DRAFT NOT GENERATED"}</span><button className="text-button" disabled={!copy} onClick={() => navigator.clipboard?.writeText(copy || "")}><Save size={14}/>Copy text</button></div>
+         {item.draftReview && <div className={`notice ${item.draftReview.status === "ready" ? "notice-success" : "notice-config"}`}><strong>{item.draftReview.status === "ready" ? "Evidence review passed" : "Review before sending"}</strong>{item.draftReview.missingEvidence?.map(note => <p key={note}>{note}</p>)}{item.draftReview.unsupportedClaims?.map(claim => <p key={claim}>Check this claim: “{claim}”</p>)}</div>}
+         {copy ? <pre className="draft-content">{copy}</pre> : <div className="draft-empty">Save your profile, then generate editable drafts from the job details and your own experience.</div>}
       </section>
     </div>
     <aside className="application-side">
       <section className="career-card"><span className="eyebrow">NEXT STEP</span><h2>Move it forward</h2><p className="muted small">Status is a private organizing tool. ReachFlow never submits an application for you.</p><label className="status-label">Status<select value={currentStatus} disabled={pending} onChange={e => updateStatus(e.target.value)}>{statuses.map(status => <option value={status.value} key={status.value}>{status.label}</option>)}</select></label><button className="button full-width" disabled={pending || currentStatus === "submitted"} onClick={() => updateStatus("submitted")}>{pending ? <LoaderCircle className="spin" size={16}/> : <Check size={16}/>}Mark as applied</button></section>
-      <section className="career-card role-summary"><span className="eyebrow">ROLE NOTES</span><h2>Job details</h2><p>{item.description || item.job?.description || "No job description was supplied."}</p></section>
+       <section className="career-card role-summary"><span className="eyebrow">ROLE NOTES</span><h2>Job details</h2><p>{item.description || item.job?.description || "No job description was supplied."}</p><div className="listing-evidence"><div><small>Source</small><strong>{item.job?.source || "Public search source"}</strong></div><div><small>Posting integrity</small><strong>{item.job?.integrity_status === "review" ? "Review flagged" : "No flags detected"}</strong></div><div><small>Fetched</small><strong>{item.job?.fetched_at ? new Date(item.job.fetched_at).toLocaleString() : "Not recorded"}</strong></div></div></section>
     </aside>
   </div>;
 }

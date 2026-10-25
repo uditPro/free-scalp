@@ -110,6 +110,7 @@ export const employerJobPatchSchema = z.object({
 export const employerApplicationPatchSchema = z.object({ status: z.enum(['submitted', 'reviewing', 'interview', 'rejected', 'hired', 'withdrawn']).optional(), employer_note: z.string().trim().max(8000).optional() }).strict();
 export const employerBoardQuerySchema = z.object({ query: z.string().trim().max(120).optional(), location: z.string().trim().max(120).optional(), limit: z.coerce.number().int().min(1).max(50).default(24) }).strict();
 export const jobBoardApplySchema = z.object({ coverNote: z.string().trim().max(4000).optional() }).strict();
+export const jobPromotionSchema = z.object({ targetCents: z.number().int().min(1000).max(99999900) }).strict();
 export const byokSettingsSchema = z.object({ provider: z.literal('openai-compatible'), model: z.string().trim().min(1).max(200), baseUrl: z.string().trim().min(1).max(2048), apiKey: z.string().min(1).max(4096) }).strict();
 const leadText = (max: number) => z.string().trim().min(1).max(max);
 export const leadSearchSchema = z.object({

@@ -12,16 +12,19 @@ export const GET = route(async () => {
   const company = await ownedCompany(user.id);
   if (!company) return response({ company: null, jobs: [] });
   const db = admin();
-  const { data: jobs, error } = await db.from('employer_jobs').select('*').eq('company_id', company.id).order('created_at', { ascending: false });
-  if (error) throw error;
-  const ids = (jobs ?? []).map(job => job.id);
+   const { data: jobs, error } = await db.from('employer_jobs').select('*').eq('company_id', company.id).order('created_at', { ascending: false });
+   if (error) throw error;
+   const ids = (jobs ?? []).map(job => job.id);
   const counts = new Map<string, number>();
   if (ids.length) {
     const { data: applications, error: applicationError } = await db.from('employer_applications').select('job_id').in('job_id', ids);
     if (applicationError) throw applicationError;
     for (const application of applications ?? []) counts.set(application.job_id, (counts.get(application.job_id) ?? 0) + 1);
   }
-  return response({ company, jobs: (jobs ?? []).map(job => ({ ...job, applicant_count: counts.get(job.id) ?? 0 })) });
+   const { data: promotions, error: promotionError } = ids.length ? await db.from('employer_job_promotions').select('*').in('job_id', ids) : { data: [], error: null };
+   if (promotionError) throw promotionError;
+   const promotionMap = new Map((promotions ?? []).map(promotion => [promotion.job_id, promotion]));
+   return response({ company, jobs: (jobs ?? []).map(job => ({ ...job, applicant_count: counts.get(job.id) ?? 0, promotion: promotionMap.get(job.id) ?? null })) });
 });
 
 export const POST = route(async request => {

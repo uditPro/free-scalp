@@ -18,7 +18,7 @@ Create `.env.local` using `.env.example` and supply your own service values priv
 
 ## Configure live services
 
-1. Create a Supabase project. Apply the migrations in `supabase/migrations/` in numeric order. `008_housing.sql` adds the rental matching tables and RLS policies; `009_housing_any_location.sql` expands the pilot from Ahmedabad to any city, metro, or town; `010_employer_jobs.sql` adds verified-employer job posting and in-platform applications; `011_job_provenance_and_integrity.sql` adds source provenance and posting-integrity metadata for AI job search.
+1. Create a Supabase project. Apply the migrations in `supabase/migrations/` in numeric order. `008_housing.sql` adds the rental matching tables and RLS policies; `009_housing_any_location.sql` expands the pilot from Ahmedabad to any city, metro, or town; `010_employer_jobs.sql` adds verified-employer job posting and in-platform applications; `011_job_provenance_and_integrity.sql` adds source provenance and posting-integrity metadata for AI job search; `012_job_promotions.sql` adds transparent, Stripe-paid sponsored job placement.
 2. Configure email confirmation, SMTP and the allowed `/api/auth/callback` URL.
 3. Provide `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` for signup/login.
    `SUPABASE_SECRET_KEY` is server-only and required for search/billing, not authentication.
@@ -198,3 +198,6 @@ parallel quota exhaustion, real search/history, Stripe test checkout/cancellatio
 and mobile accessibility. Add infrastructure rate limits and bot protection for auth endpoints,
 monitoring, backups, retention/deletion policies, terms and privacy notices. Review provider terms
 and data-processing arrangements. Do not market universal access or guaranteed client leads.
+### Sponsored job placement
+
+Verified employers can purchase transparent sponsored placement for published jobs. Stripe must send `checkout.session.completed` to `/api/billing/webhook`; the job is promoted only after a paid checkout is reconciled. Sponsored ranking changes visibility only, is labeled to candidates, and does not change verification or fit scoring.

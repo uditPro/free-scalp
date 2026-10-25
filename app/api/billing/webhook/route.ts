@@ -8,7 +8,22 @@ export const POST = route(async request => {
   const raw = await request.text(); if (raw.length > 1000000) throw new ApiError(413, 'Webhook is too large.');
   let event: Stripe.Event;
   try { event = client.webhooks.constructEvent(raw, signature, required('STRIPE_WEBHOOK_SECRET')); } catch { throw new ApiError(400, 'Invalid webhook signature.'); }
-  if (!['customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted'].includes(event.type)) return response({ received: true });
+   if (event.type === 'checkout.session.completed') {
+     const session = event.data.object as Stripe.Checkout.Session;
+     const metadata = session.metadata ?? {};
+     if (session.mode === 'payment' && session.payment_status === 'paid' && metadata.promotion_id && metadata.user_id && session.amount_total) {
+       const applied = await admin().rpc('apply_job_promotion_payment', {
+         p_session_id: session.id,
+         p_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : '',
+         p_promotion_id: metadata.promotion_id,
+         p_owner_user_id: metadata.user_id,
+         p_amount_cents: session.amount_total,
+       });
+       if (applied.error) throw new ApiError(503, 'Promotion payment could not be reconciled.');
+     }
+     return response({ received: true });
+   }
+   if (!['customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted'].includes(event.type)) return response({ received: true });
   const subscription = event.data.object as Stripe.Subscription;
   const customer = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
   const db = admin();

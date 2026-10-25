@@ -36,10 +36,10 @@ export const GET = route(async request => {
      if (!aPromotion && bPromotion) return 1;
      if (aPromotion && bPromotion && aPromotion.current_bid_cents !== bPromotion.current_bid_cents) return Number(bPromotion.current_bid_cents) - Number(aPromotion.current_bid_cents);
      return new Date(b.published_at ?? 0).getTime() - new Date(a.published_at ?? 0).getTime();
-   }).slice(0, limit).map(job => {
+   }).slice(0, limit).map((job, index) => {
      const company = companyMap.get(job.company_id)!;
      const promotion = promotionMap.get(job.id);
-     return { ...job, is_sponsored: Boolean(promotion), promotion_label: promotion ? 'Sponsored placement' : null, company: { id: company.id, name: company.name, website_url: company.website_url, description: company.description, verified: true } };
+     return { ...job, is_sponsored: Boolean(promotion), sponsored_rank: promotion ? index + 1 : null, promotion_label: promotion ? 'Sponsored placement' : null, company: { id: company.id, name: company.name, website_url: company.website_url, description: company.description, verified: true } };
   });
   return response({ jobs: filtered });
 });

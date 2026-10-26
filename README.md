@@ -144,7 +144,7 @@ verifies the session with the Auth service rather than trusting browser claims.
   contact preference; save public business records, score them deterministically, add notes, manage
   statuses, and export tenant-owned leads. Apply `005_leads_crm.sql` before using saved leads.
 - Outreach agent at `/outreach`: company context, lead briefs, public-source discovery, evidence-backed
-  drafts, campaigns, human approval, protected hourly autopilot, Resend delivery, run history, and a
+  drafts, campaigns, human approval, protected scheduled autopilot, Resend delivery, run history, and a
   tenant-isolated credit wallet. New accounts receive $30 welcome outreach credits; Starter adds $10
   monthly credits and Pro adds $20 monthly credits. Sending costs $0.04 per confirmed email.
 - Real Exa API adapter with jobs/clients/research query modes; no fabricated live results.

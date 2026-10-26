@@ -25,6 +25,12 @@ export function applicationOrigin(value: string | undefined): string {
 export function isApplicationOrigin(origin: string | null, configured: string): boolean {
   const canonical = new URL(applicationOrigin(configured));
   if (origin === canonical.origin) return true;
+  if (canonical.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(canonical.hostname)) {
+    try {
+      const localOrigin = origin ? new URL(origin) : null;
+      return Boolean(localOrigin && localOrigin.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(localOrigin.hostname) && localOrigin.port === canonical.port);
+    } catch { return false; }
+  }
   if (canonical.protocol !== 'https:' || !canonical.hostname.includes('.') ||
       /^[\d.]+$/.test(canonical.hostname) || canonical.hostname.endsWith('.vercel.app') ||
       canonical.hostname.endsWith('.localhost')) return false;

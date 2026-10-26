@@ -33,6 +33,12 @@ test('canonical application origin rejects unsafe and malformed origins', () => 
   for (const value of [undefined, '', 'http://example.com', 'https://user:pass@example.com', 'https://example.com/path', 'https://example.com?q=1', 'javascript:bad']) assert.throws(() => applicationOrigin(value));
 });
 
+test('local development accepts localhost and loopback origin aliases', () => {
+  assert.equal(isApplicationOrigin('http://localhost:3000', 'http://localhost:3000'), true);
+  assert.equal(isApplicationOrigin('http://127.0.0.1:3000', 'http://localhost:3000'), true);
+  assert.equal(isApplicationOrigin('http://127.0.0.1:3001', 'http://localhost:3000'), false);
+});
+
 test('auth schemas require only the appropriate fields per action', () => {
   assert.equal(authSchema.safeParse({ action: 'oauth', provider: 'google' }).success, true);
   assert.equal(authSchema.safeParse({ action: 'oauth', provider: 'github' }).success, false);

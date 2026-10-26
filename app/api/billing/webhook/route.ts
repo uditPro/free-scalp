@@ -1,14 +1,14 @@
 import type Stripe from 'stripe';
-import { stripe, planForPrice } from '@/lib/billing';
-import { admin, required, response, route, ApiError } from '@/lib/server';
+import { stripe, stripeWebhookSecret, planForPrice } from '@/lib/billing';
+import { admin, response, route, ApiError } from '@/lib/server';
 export const runtime = 'nodejs';
 export const POST = route(async request => {
   const client = stripe(); const signature = request.headers.get('stripe-signature');
   if (!signature) throw new ApiError(400, 'Missing webhook signature.');
   const raw = await request.text(); if (raw.length > 1000000) throw new ApiError(413, 'Webhook is too large.');
   let event: Stripe.Event;
-  try { event = client.webhooks.constructEvent(raw, signature, required('STRIPE_WEBHOOK_SECRET')); } catch { throw new ApiError(400, 'Invalid webhook signature.'); }
-   if (event.type === 'checkout.session.completed') {
+   try { event = client.webhooks.constructEvent(raw, signature, stripeWebhookSecret()); } catch (error) { if (error instanceof ApiError) throw error; throw new ApiError(400, 'Invalid webhook signature.'); }
+    if (['checkout.session.completed', 'checkout.session.async_payment_succeeded'].includes(event.type)) {
      const session = event.data.object as Stripe.Checkout.Session;
      const metadata = session.metadata ?? {};
       if (session.mode === 'payment' && session.payment_status === 'paid' && metadata.homepage_promotion_id && session.amount_total) {

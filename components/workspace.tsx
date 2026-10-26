@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, ArrowUpRight, BriefcaseBusiness, Building2, ClipboardList, CreditCard, FlaskConical, History, Home, LoaderCircle, LogOut, Rocket, Search, Settings2, Sparkles, UserRound, Users, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BriefcaseBusiness, Building2, ClipboardList, CreditCard, FlaskConical, History, Home, LoaderCircle, LogOut, Rocket, Search, Send, Settings2, Sparkles, UserRound, Users, X } from "lucide-react";
 import { Brand } from "./brand";
 import { api, safeExternalUrl } from "./api-client";
 import SearchControls from "./search-controls";
@@ -119,7 +119,7 @@ export default function Workspace() {
         {kinds.map(({ value, title, icon: Icon }) => <button key={value} disabled={searching} className={`sidebar-link ${view === "search" && kind === value ? "active" : ""}`} onClick={() => chooseKind(value)}><Icon size={18}/>{title}</button>)}
         <span className="sidebar-divider"/>
          <button className={`sidebar-link ${view === "history" ? "active" : ""}`} onClick={() => setView("history")}><History size={18}/>Search history</button>
-          <Link className="sidebar-link" href="/homes"><Home size={18}/>Ahmedabad homes</Link><Link className="sidebar-link" href="/jobs"><BriefcaseBusiness size={18}/>Verified jobs</Link><Link className="sidebar-link" href="/employer"><Building2 size={18}/>Employer portal</Link><Link className="sidebar-link" href="/job-hunt"><Rocket size={18}/>7-day job sprint</Link><Link className="sidebar-link" href="/applications"><ClipboardList size={18}/>Applications</Link><Link className="sidebar-link" href="/leads"><Users size={18}/>Lead finder</Link><Link className="sidebar-link" href="/dashboard/affiliate"><Users size={18}/>Referrals</Link>
+          <Link className="sidebar-link" href="/leads"><Users size={18}/>Leads</Link><Link className="sidebar-link" href="/outreach"><Send size={18}/>Outreach agent</Link><span className="sidebar-divider"/><Link className="sidebar-link" href="/homes"><Home size={18}/>Ahmedabad homes</Link><Link className="sidebar-link" href="/jobs"><BriefcaseBusiness size={18}/>Verified jobs</Link><Link className="sidebar-link" href="/employer"><Building2 size={18}/>Employer portal</Link><Link className="sidebar-link" href="/job-hunt"><Rocket size={18}/>7-day job sprint</Link><Link className="sidebar-link" href="/applications"><ClipboardList size={18}/>Applications</Link><Link className="sidebar-link" href="/dashboard/affiliate"><Users size={18}/>Referrals</Link>
          <Link className="sidebar-link" href="/profile"><UserRound size={18}/>Your profile</Link>
          <button className={`sidebar-link ${view === "settings" ? "active" : ""}`} onClick={() => setView("settings")}><Settings2 size={18}/>Workspace settings</button>
       </nav>

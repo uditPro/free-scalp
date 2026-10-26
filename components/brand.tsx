@@ -16,7 +16,7 @@ export function Header() {
   async function logout() {
     try { await api("/api/auth", { action: "logout" }); } finally { window.location.assign("/"); }
   }
-  return <header className="site-header site-header-floating"><div className="header-inner"><Brand/><nav aria-label="Main navigation"><Link href="/jobs">Verified jobs</Link><Link href="/employer">For employers</Link><Link href="/#possibilities">Use cases</Link><Link href="/blog">Field guide</Link><Link href="/pricing">Pricing</Link></nav><div className="nav-actions">
+  return <header className="site-header site-header-floating"><div className="header-inner"><Brand/><nav aria-label="Main navigation"><Link href="/leads">Leads</Link><Link href="/outreach">Outreach agent</Link><Link href="/jobs">Verified jobs</Link><Link href="/employer">For employers</Link><Link href="/#possibilities">Use cases</Link><Link href="/blog">Field guide</Link><Link href="/pricing">Pricing</Link></nav><div className="nav-actions">
     {session === "loading" ? <span className="nav-session-loading" aria-label="Checking sign-in status"/> : session === "signed-in" ? <><Link className="button button-small" href="/dashboard"><LayoutDashboard size={15}/> Dashboard</Link><button className="text-button nav-logout" type="button" onClick={logout}><LogOut size={15}/> Log out</button></> : <><Link className="login-link" href="/login">Log in</Link><Link className="button button-small" href="/signup">Get started <ArrowUpRight size={15}/></Link></>}
   </div></div></header>;
 }

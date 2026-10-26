@@ -18,7 +18,7 @@ Create `.env.local` using `.env.example` and supply your own service values priv
 
 ## Configure live services
 
-1. Create a Supabase project. Apply the migrations in `supabase/migrations/` in numeric order. `008_housing.sql` adds the rental matching tables and RLS policies; `009_housing_any_location.sql` expands the pilot from Ahmedabad to any city, metro, or town; `010_employer_jobs.sql` adds verified-employer job posting and in-platform applications; `011_job_provenance_and_integrity.sql` adds source provenance and posting-integrity metadata for AI job search; `012_job_promotions.sql` adds transparent, Stripe-paid sponsored job placement; `013_homepage_promotions.sql` adds the public homepage auction for a business website or X username without business verification; `014_site_presence.sql` adds anonymous first-party visit and active-user metrics; `015_homepage_promotion_metadata.sql` stores fetched website/X descriptions, logos, and repeat-bid identity keys.
+1. Create a Supabase project. Apply the migrations in `supabase/migrations/` in numeric order. `008_housing.sql` adds the rental matching tables and RLS policies; `009_housing_any_location.sql` expands the pilot from Ahmedabad to any city, metro, or town; `010_employer_jobs.sql` adds verified-employer job posting and in-platform applications; `011_job_provenance_and_integrity.sql` adds source provenance and posting-integrity metadata for AI job search; `012_job_promotions.sql` adds transparent, Stripe-paid sponsored job placement; `013_homepage_promotions.sql` adds the public homepage auction for a business website or X username without business verification; `014_site_presence.sql` adds anonymous first-party visit and active-user metrics; `015_homepage_promotion_metadata.sql` stores fetched website/X descriptions, logos, and repeat-bid identity keys; `016_gtm_outreach_agent.sql` adds company context, briefs, campaigns, approval queues, and agent runs; `017_gtm_credits.sql` adds $30 welcome outreach credits and plan-linked email credits.
 2. Configure email confirmation, SMTP and the allowed `/api/auth/callback` URL.
 3. Provide `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` for signup/login.
    `SUPABASE_SECRET_KEY` is server-only and required for search/billing, not authentication.
@@ -143,6 +143,10 @@ verifies the session with the Auth service rather than trusting browser claims.
 - Lead finder and lightweight CRM: customize niche, geography, business type, need, sources, and
   contact preference; save public business records, score them deterministically, add notes, manage
   statuses, and export tenant-owned leads. Apply `005_leads_crm.sql` before using saved leads.
+- Outreach agent at `/outreach`: company context, lead briefs, public-source discovery, evidence-backed
+  drafts, campaigns, human approval, protected hourly autopilot, Resend delivery, run history, and a
+  tenant-isolated credit wallet. New accounts receive $30 welcome outreach credits; Starter adds $10
+  monthly credits and Pro adds $20 monthly credits. Sending costs $0.04 per confirmed email.
 - Real Exa API adapter with jobs/clients/research query modes; no fabricated live results.
 - Agent-Reach-compatible hosted Exa MCP connector with keyless smoke-test mode and dedicated API-key mode.
 - Safe Supabase setup preview/apply helper that verifies schema and exact callback redirects.
@@ -155,13 +159,16 @@ verifies the session with the Auth service rather than trusting browser claims.
 
 This is a launch foundation, not a verified production service. Live services have not been tested
 without account configuration. Exa MCP/API is the implemented search connector: no LinkedIn login,
- social account cookies, arbitrary website extraction, recurring scheduling, email alerts, resume
- binary upload/parser, or background worker is included. Candidate workflow currently stores
-structured profile/resume text and uses deterministic generation unless managed AI is configured.
+ social account cookies, arbitrary website extraction, email alerts, resume
+  binary upload/parser, or background worker is included. Candidate workflow currently stores
+  structured profile/resume text and uses deterministic generation unless managed AI is configured.
 Employer verification is domain matching, not legal incorporation or recruiter identity
 accreditation; review company details and add moderation, rate limits, abuse reporting, and
 retention policies before opening the board broadly.
 Client discovery means relevant public search results, not verified leads or enriched contacts.
+The outreach agent only uses public-source lead evidence, never sends a draft before approval, and
+requires `RESEND_API_KEY`, a verified `OUTREACH_FROM_EMAIL` (plus optional `OUTREACH_REPLY_TO`), and the protected scheduler secret for
+automated sending. Reply handling and meeting booking require an inbound mail/calendar integration.
 Failed attempts consume quota; interrupted requests may remain pending and need reconciliation.
 Password recovery uses PKCE and should open in the initiating browser.
 Checkout prices are shown by Stripe; set and publish your commercial prices before launch.

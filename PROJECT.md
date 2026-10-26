@@ -21,9 +21,11 @@ Inspired by Agent-Reach's upstream connector architecture; not a fork or a claim
 - GET /api/job-board and GET/POST /api/job-board/:id(/apply) -> public job discovery and in-platform applications.
 - GET /api/employer/applications and PATCH /api/employer/applications/:id -> employer applicant review/status.
 - GET /api/job-applications -> candidate status for applications to employer-posted jobs.
+- GET/POST /api/gtm -> tenant-isolated outreach agent context, briefs, campaigns, approval queue, runs, and credit wallet.
+- GET/POST /api/gtm/cron -> protected hourly discovery/draft/send heartbeat; only approved messages may be sent.
 - Frontend must handle missing configuration and unauthenticated API responses gracefully.
 - Paid plan authorization and quotas enforced on the server, never by browser claims.
-- No recurring scheduler or arbitrary shell execution in this initial build.
+- The outreach heartbeat uses the deployer's scheduler (`vercel.json` for Vercel) and never executes arbitrary shell commands.
 
 ## Acceptance
 Attractive responsive marketing site, auth screens, searchable dashboard with genuine connector responses,

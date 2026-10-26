@@ -20,7 +20,7 @@ export default function Pricing() {
     <div className="pricing-grid">
       <article className="plan-card">
         <span className="eyebrow">FIRST STEPS</span><h2>Free</h2><p>Make a little space for possibility.</p>
-        <div className="plan-price">10 searches / month</div><span className="plan-caption">A free account. A fresh perspective.</span>
+         <div className="plan-price">10 searches / month</div><span className="plan-caption">Plus $30 welcome outreach credits for new accounts.</span>
         <Link className="button button-outline full-width" href="/signup">Create an account <ArrowUpRight size={17}/></Link>
         <ul>{["Jobs, clients, and research", "Source-linked discoveries", "Personal search history", "CSV export of your results"].map(item => <li key={item}><Check size={16}/>{item}</li>)}</ul>
       </article>
@@ -28,11 +28,11 @@ export default function Pricing() {
         {plan === "starter" && <span className="plan-badge">A GOOD PLACE TO GROW</span>}
         <span className="eyebrow">{plan === "starter" ? "BUILD MOMENTUM" : "GO A LITTLE FURTHER"}</span>
         <h2>{plan === "starter" ? "Starter" : "Pro"}</h2><p>{plan === "starter" ? "For a more intentional search habit." : "For your ongoing discovery workflow."}</p>
-        <div className="plan-price">{plan === "starter" ? "100" : "500"} searches / month</div><span className="plan-caption">Current price and terms shown at checkout.</span>
+         <div className="plan-price">{plan === "starter" ? "100" : "500"} searches / month</div><span className="plan-caption">Plus ${plan === "starter" ? "10" : "20"} outreach credits / month.</span>
         <button className={`button ${plan === "pro" ? "button-outline" : ""} full-width`} onClick={() => checkout(plan)} disabled={!!pending}>
           {pending === plan ? <LoaderCircle className="spin" size={17}/> : <>Choose {plan === "starter" ? "Starter" : "Pro"}<ArrowUpRight size={17}/></>}
         </button>
-        <ul>{["Everything in your free workspace", "More monthly search capacity", "Secure checkout with Stripe", "Self-service subscription management"].map(item => <li key={item}><Check size={16}/>{item}</li>)}</ul>
+         <ul>{["Everything in your free workspace", "More monthly search capacity", "Monthly outreach credits", "Secure checkout with Stripe", "Self-service subscription management"].map(item => <li key={item}><Check size={16}/>{item}</li>)}</ul>
       </article>)}
     </div>
     {error && <div className="notice notice-error pricing-error" role="alert">{error} <Link href="/login?next=%2Fpricing">Sign in</Link> if you haven’t already.</div>}

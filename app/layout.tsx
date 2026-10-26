@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { StructuredData } from "@/components/structured-data";
+import SitePresence from "@/components/site-presence";
 import { seoOrigin } from "@/lib/seo";
 
 const origin = seoOrigin();
@@ -18,5 +19,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body><StructuredData/><a className="skip-link" href="#main">Skip to content</a>{children}</body></html>;
+  return <html lang="en"><body><StructuredData/><SitePresence/><a className="skip-link" href="#main">Skip to content</a>{children}</body></html>;
 }

@@ -117,6 +117,7 @@ export const homepagePromotionSchema = z.object({
   targetCents: z.number().int().min(100).max(99999900),
   termsAccepted: z.literal(true),
 }).strict().refine(value => Boolean(value.websiteUrl) !== Boolean(value.xUsername), { message: 'Enter a website or X username.' });
+export const sitePresenceSchema = z.object({ visitorId: z.string().trim().regex(/^[A-Za-z0-9_-]{16,80}$/, 'Invalid visitor identifier.'), path: z.string().trim().regex(/^\/[A-Za-z0-9_?=&%./-]{0,190}$/, 'Invalid page path.') }).strict();
 export const byokSettingsSchema = z.object({ provider: z.literal('openai-compatible'), model: z.string().trim().min(1).max(200), baseUrl: z.string().trim().min(1).max(2048), apiKey: z.string().min(1).max(4096) }).strict();
 const leadText = (max: number) => z.string().trim().min(1).max(max);
 export const leadSearchSchema = z.object({

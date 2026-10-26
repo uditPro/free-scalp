@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { analyzeJobFit, assertOwned, profileCompletion } from '../lib/candidate-workflow';
 import { deterministicDrafts, aiStatus, generateDrafts } from '../lib/ai-adapter';
-import { employerCompanySchema, employerJobSchema, homepagePromotionSchema, jobPromotionSchema, profileSchema, jobResultSchema } from '../lib/validation';
+import { employerCompanySchema, employerJobSchema, homepagePromotionSchema, jobPromotionSchema, profileSchema, jobResultSchema, sitePresenceSchema } from '../lib/validation';
 import { domainsMatch, jobPublishReadiness, mapEmployerStatusToCandidateStatus, verifyCompanyEmail } from '../lib/employer-workflow';
 import { inspectJobPosting, sourceType } from '../lib/job-posting-guard';
 
@@ -37,6 +37,11 @@ test('homepage promotion accepts either a website or X username with terms', () 
   assert.equal(homepagePromotionSchema.safeParse({ xUsername: '@acme', targetCents: 100, termsAccepted: true }).success, true);
   assert.equal(homepagePromotionSchema.safeParse({ websiteUrl: 'https://acme.com', xUsername: '@acme', targetCents: 100, termsAccepted: true }).success, false);
   assert.equal(homepagePromotionSchema.safeParse({ websiteUrl: 'https://acme.com', targetCents: 100, termsAccepted: false }).success, false);
+});
+test('site presence accepts anonymous visitor heartbeats with safe paths', () => {
+  assert.equal(sitePresenceSchema.safeParse({ visitorId: '1234567890abcdef', path: '/' }).success, true);
+  assert.equal(sitePresenceSchema.safeParse({ visitorId: 'too-short', path: '/' }).success, false);
+  assert.equal(sitePresenceSchema.safeParse({ visitorId: '1234567890abcdef', path: 'https://evil.example' }).success, false);
 });
 test('employer job validation protects publish boundaries and status sync', () => {
   assert.equal(employerCompanySchema.safeParse({ name: 'Acme', websiteUrl: 'https://acme.com', description: '' }).success, true);

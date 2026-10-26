@@ -21,25 +21,29 @@ export const GET = route(async request => {
   const companyMap = new Map((companies ?? []).map(company => [company.id, company]));
   const normalizedQuery = query?.toLowerCase();
   const normalizedLocation = location?.toLowerCase();
-   const { data: promotions, error: promotionError } = companyIds.length ? await db.from('employer_job_promotions').select('job_id,current_bid_cents,status,last_payment_at').in('job_id', (jobs ?? []).map(job => job.id)).eq('status', 'active') : { data: [], error: null };
-   if (promotionError) throw promotionError;
-   const promotionMap = new Map((promotions ?? []).map(promotion => [promotion.job_id, promotion]));
+    const { data: promotions, error: promotionError } = companyIds.length ? await db.from('employer_job_promotions').select('job_id,current_bid_cents,status,last_payment_at').in('job_id', (jobs ?? []).map(job => job.id)).eq('status', 'active') : { data: [], error: null };
+    if (promotionError) throw promotionError;
+    const promotionMap = new Map((promotions ?? []).map(promotion => [promotion.job_id, promotion]));
+    const highestBidCents = Math.max(0, ...(promotions ?? []).map(promotion => Number(promotion.current_bid_cents ?? 0)));
+    const sponsoredRankMap = new Map((promotions ?? []).slice().sort((a, b) => Number(b.current_bid_cents) - Number(a.current_bid_cents) || new Date(a.last_payment_at ?? 0).getTime() - new Date(b.last_payment_at ?? 0).getTime()).map((promotion, index) => [promotion.job_id, index + 1]));
    const filtered = (jobs ?? []).filter(job => {
     const company = companyMap.get(job.company_id);
     if (!company) return false;
     const searchable = `${job.title} ${job.location} ${job.description} ${job.requirements} ${company.name}`.toLowerCase();
     return (!normalizedQuery || searchable.includes(normalizedQuery)) && (!normalizedLocation || job.location.toLowerCase().includes(normalizedLocation));
-   }).sort((a, b) => {
+    }).sort((a, b) => {
      const aPromotion = promotionMap.get(a.id);
      const bPromotion = promotionMap.get(b.id);
      if (aPromotion && !bPromotion) return -1;
      if (!aPromotion && bPromotion) return 1;
-     if (aPromotion && bPromotion && aPromotion.current_bid_cents !== bPromotion.current_bid_cents) return Number(bPromotion.current_bid_cents) - Number(aPromotion.current_bid_cents);
-     return new Date(b.published_at ?? 0).getTime() - new Date(a.published_at ?? 0).getTime();
-   }).slice(0, limit).map((job, index) => {
-     const company = companyMap.get(job.company_id)!;
-     const promotion = promotionMap.get(job.id);
-     return { ...job, is_sponsored: Boolean(promotion), sponsored_rank: promotion ? index + 1 : null, promotion_label: promotion ? 'Sponsored placement' : null, company: { id: company.id, name: company.name, website_url: company.website_url, description: company.description, verified: true } };
-  });
-  return response({ jobs: filtered });
+      if (aPromotion && bPromotion && aPromotion.current_bid_cents !== bPromotion.current_bid_cents) return Number(bPromotion.current_bid_cents) - Number(aPromotion.current_bid_cents);
+      if (aPromotion && bPromotion && aPromotion.last_payment_at !== bPromotion.last_payment_at) return new Date(aPromotion.last_payment_at ?? 0).getTime() - new Date(bPromotion.last_payment_at ?? 0).getTime();
+      return new Date(b.published_at ?? 0).getTime() - new Date(a.published_at ?? 0).getTime();
+    });
+   return response({ jobs: filtered.slice(0, limit).map(job => {
+      const company = companyMap.get(job.company_id)!;
+      const promotion = promotionMap.get(job.id);
+      const sponsoredRank = promotion ? sponsoredRankMap.get(job.id) ?? null : null;
+      return { ...job, is_sponsored: Boolean(promotion), sponsored_rank: sponsoredRank, current_bid_cents: promotion ? Number(promotion.current_bid_cents) : null, minimum_next_bid_cents: promotion ? Number(promotion.current_bid_cents) + 100 : Math.max(100, highestBidCents + 100), top_bid_cents: highestBidCents || 100, promotion_label: promotion ? 'Sponsored placement' : null, company: { id: company.id, name: company.name, website_url: company.website_url, description: company.description, verified: true } };
+    }) });
 });

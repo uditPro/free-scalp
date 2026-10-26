@@ -24,8 +24,12 @@ export const GET = route(async () => {
    const { data: promotions, error: promotionError } = ids.length ? await db.from('employer_job_promotions').select('*').in('job_id', ids) : { data: [], error: null };
    if (promotionError) throw promotionError;
    const promotionMap = new Map((promotions ?? []).map(promotion => [promotion.job_id, promotion]));
-   return response({ company, jobs: (jobs ?? []).map(job => ({ ...job, applicant_count: counts.get(job.id) ?? 0, promotion: promotionMap.get(job.id) ?? null })) });
-});
+   const { data: activePromotions, error: activePromotionError } = await db.from('employer_job_promotions').select('job_id,current_bid_cents,last_payment_at').eq('status', 'active').order('current_bid_cents', { ascending: false }).order('last_payment_at', { ascending: true });
+   if (activePromotionError) throw activePromotionError;
+   const activeRankMap = new Map((activePromotions ?? []).map((promotion, index) => [promotion.job_id, index + 1]));
+   const highestBidCents = Math.max(0, ...(activePromotions ?? []).map(promotion => Number(promotion.current_bid_cents ?? 0)));
+   return response({ company, highestBidCents, jobs: (jobs ?? []).map(job => { const promotion = promotionMap.get(job.id); const ownBid = Number(promotion?.current_bid_cents ?? 0); return { ...job, applicant_count: counts.get(job.id) ?? 0, promotion: promotion ? { ...promotion, rank: activeRankMap.get(job.id) ?? null, minimum_next_bid_cents: Math.max(100, ownBid + 100, highestBidCents + (activeRankMap.get(job.id) === 1 ? 100 : 100)) } : null, highest_bid_cents: highestBidCents }; }) });
+ });
 
 export const POST = route(async request => {
   checkOrigin(request);

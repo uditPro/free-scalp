@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { analyzeJobFit, assertOwned, profileCompletion } from '../lib/candidate-workflow';
 import { deterministicDrafts, aiStatus, generateDrafts } from '../lib/ai-adapter';
-import { employerCompanySchema, employerJobSchema, profileSchema, jobResultSchema } from '../lib/validation';
+import { employerCompanySchema, employerJobSchema, homepagePromotionSchema, jobPromotionSchema, profileSchema, jobResultSchema } from '../lib/validation';
 import { domainsMatch, jobPublishReadiness, mapEmployerStatusToCandidateStatus, verifyCompanyEmail } from '../lib/employer-workflow';
 import { inspectJobPosting, sourceType } from '../lib/job-posting-guard';
 
@@ -27,6 +27,16 @@ test('employer verification accepts matching business domains and rejects consum
   assert.equal(verifyCompanyEmail('owner@acme.com', 'https://www.acme.com', '2026-10-24T00:00:00.000Z').status, 'verified');
   const consumer = verifyCompanyEmail('owner@gmail.com', 'https://www.acme.com');
   assert.equal(consumer.status, 'pending'); assert.match(consumer.reason, /personal inbox/);
+});
+test('sponsored auction accepts a one-dollar opening bid and rejects sub-dollar bids', () => {
+  assert.equal(jobPromotionSchema.safeParse({ targetCents: 100 }).success, true);
+  assert.equal(jobPromotionSchema.safeParse({ targetCents: 99 }).success, false);
+});
+test('homepage promotion accepts either a website or X username with terms', () => {
+  assert.equal(homepagePromotionSchema.safeParse({ websiteUrl: 'https://acme.com', targetCents: 100, termsAccepted: true }).success, true);
+  assert.equal(homepagePromotionSchema.safeParse({ xUsername: '@acme', targetCents: 100, termsAccepted: true }).success, true);
+  assert.equal(homepagePromotionSchema.safeParse({ websiteUrl: 'https://acme.com', xUsername: '@acme', targetCents: 100, termsAccepted: true }).success, false);
+  assert.equal(homepagePromotionSchema.safeParse({ websiteUrl: 'https://acme.com', targetCents: 100, termsAccepted: false }).success, false);
 });
 test('employer job validation protects publish boundaries and status sync', () => {
   assert.equal(employerCompanySchema.safeParse({ name: 'Acme', websiteUrl: 'https://acme.com', description: '' }).success, true);

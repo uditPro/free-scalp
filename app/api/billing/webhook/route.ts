@@ -11,7 +11,18 @@ export const POST = route(async request => {
    if (event.type === 'checkout.session.completed') {
      const session = event.data.object as Stripe.Checkout.Session;
      const metadata = session.metadata ?? {};
-     if (session.mode === 'payment' && session.payment_status === 'paid' && metadata.promotion_id && metadata.user_id && session.amount_total) {
+      if (session.mode === 'payment' && session.payment_status === 'paid' && metadata.homepage_promotion_id && session.amount_total) {
+        const targetCents = Number(metadata.target_cents);
+        if (!Number.isInteger(targetCents) || targetCents <= 0) throw new ApiError(400, 'Promotion payment metadata is invalid.');
+        const applied = await admin().rpc('apply_homepage_promotion_payment', {
+          p_session_id: session.id,
+          p_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : '',
+          p_promotion_id: metadata.homepage_promotion_id,
+          p_amount_cents: session.amount_total,
+          p_target_cents: targetCents,
+        });
+        if (applied.error) throw new ApiError(503, 'Homepage promotion payment could not be reconciled.');
+      } else if (session.mode === 'payment' && session.payment_status === 'paid' && metadata.promotion_id && metadata.user_id && session.amount_total) {
        const applied = await admin().rpc('apply_job_promotion_payment', {
          p_session_id: session.id,
          p_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : '',

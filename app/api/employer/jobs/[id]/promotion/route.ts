@@ -33,7 +33,11 @@ export const POST = route(async (request: Request, context?: Ctx) => {
   const existing = await db.from('employer_job_promotions').select('*').eq('job_id', job.id).maybeSingle();
   if (existing.error) throw existing.error;
   const current = Number(existing.data?.current_bid_cents ?? 0);
-  if (input.targetCents <= current) throw new ApiError(400, `Your new target must be greater than the current bid of $${(current / 100).toFixed(2)}.`);
+  const { data: activeBids, error: activeBidError } = await db.from('employer_job_promotions').select('job_id,current_bid_cents').eq('status', 'active');
+  if (activeBidError) throw activeBidError;
+  const highestOtherBid = Math.max(0, ...(activeBids ?? []).filter(bid => bid.job_id !== job.id).map(bid => Number(bid.current_bid_cents ?? 0)));
+  const minimumTarget = Math.max(100, current + 100, highestOtherBid + 100);
+  if (input.targetCents < minimumTarget) throw new ApiError(400, `To enter or improve the auction, bid at least $${(minimumTarget / 100).toFixed(2)}. The current top bid is $${(Math.max(current, highestOtherBid) / 100).toFixed(2)}.`);
   const contribution = input.targetCents - current;
   let promotion = existing.data;
   if (!promotion) {
